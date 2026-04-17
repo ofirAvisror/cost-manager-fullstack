@@ -55,5 +55,9 @@
   "devDependencies": {
     "canvas": "^3.2.0",
     "sharp": "^0.34.5"
+  },
+  "overrides": {
+    "ajv": "8.12.0",
+    "ajv-keywords": "5.1.0"
   }
 }
