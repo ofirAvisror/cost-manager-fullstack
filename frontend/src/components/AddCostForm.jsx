@@ -15,7 +15,10 @@ import {
   Card,
   CardContent,
   Autocomplete,
-  Tooltip
+  Tooltip,
+  Switch,
+  FormControlLabel,
+  Alert
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -67,6 +70,20 @@ export default function AddCostForm({ db }) {
   const [savingsAction, setSavingsAction] = useState('deposit');
   const [availableCategories, setAvailableCategories] = useState([]);
   const [errors, setErrors] = useState({});
+  const [partnerStatus, setPartnerStatus] = useState(null);
+  const [ownerTarget, setOwnerTarget] = useState('self');
+  const [isShared, setIsShared] = useState(false);
+  const [splitMode, setSplitMode] = useState('half_half');
+  const [selfPercentage, setSelfPercentage] = useState(50);
+
+  const hasConnectedPartner = partnerStatus?.status === 'connected' && partnerStatus?.partner;
+  const myUserId = partnerStatus?.user_id || null;
+  const partnerUserId = partnerStatus?.partner?.id || null;
+  const partnerDisplayName = hasConnectedPartner
+    ? `${partnerStatus.partner.first_name || ''} ${partnerStatus.partner.last_name || ''}`.trim() ||
+      partnerStatus.partner.email ||
+      t('forms.partnerOption')
+    : t('forms.partnerOption');
 
   /**
    * Loads available categories from database and existing costs
@@ -101,6 +118,19 @@ export default function AddCostForm({ db }) {
     }
 
     loadCategories();
+  }, [db]);
+
+  useEffect(function() {
+    async function loadPartnerStatus() {
+      if (!db || typeof db.getPartnerStatus !== 'function') return;
+      try {
+        const status = await db.getPartnerStatus();
+        setPartnerStatus(status);
+      } catch (error) {
+        setPartnerStatus(null);
+      }
+    }
+    loadPartnerStatus();
   }, [db]);
 
   /**
@@ -152,12 +182,38 @@ export default function AddCostForm({ db }) {
         type = result.data.savingsAction === 'deposit' ? 'savings_deposit' : 'savings_withdrawal';
       }
 
+      if (!hasConnectedPartner) {
+        setOwnerTarget('self');
+      }
+      if (isShared && !hasConnectedPartner) {
+        toast.error(t('messages.sharedRequiresPartner'));
+        return;
+      }
+      if (isShared && splitMode === 'manual') {
+        const partnerPct = 100 - selfPercentage;
+        if (selfPercentage < 0 || selfPercentage > 100 || partnerPct < 0 || partnerPct > 100) {
+          toast.error(t('messages.manualSplitRangeError'));
+          return;
+        }
+      }
+
+      const finalOwnerUserId = ownerTarget === 'partner' && partnerUserId ? partnerUserId : myUserId;
+      const splitPayload = splitMode === 'manual'
+        ? { self_percentage: selfPercentage, partner_percentage: 100 - selfPercentage }
+        : { self_percentage: 50, partner_percentage: 50 };
+
       await db.addCost({
         sum: sumValue,
         currency: result.data.currency,
         category: result.data.category,
         description: result.data.description,
-        type: type
+        type: type,
+        ownerUserId: finalOwnerUserId || undefined,
+        paidByUserId: myUserId || undefined,
+        isShared: isShared,
+        sharedWithUserId: isShared ? partnerUserId : null,
+        sharedSplitMode: splitMode,
+        sharedSplit: splitPayload
       });
 
       // Reset form and show success message
@@ -168,6 +224,10 @@ export default function AddCostForm({ db }) {
       setTransactionType('expense');
       setSavingsAction('deposit');
       setErrors({});
+      setOwnerTarget('self');
+      setIsShared(false);
+      setSplitMode('half_half');
+      setSelfPercentage(50);
       
       // Reload categories to include the new one
       try {
@@ -264,6 +324,69 @@ export default function AddCostForm({ db }) {
                 </Select>
               </FormControl>
             </Tooltip>
+          )}
+
+          <FormControl
+            fullWidth
+            margin="normal"
+            disabled={!hasConnectedPartner}
+          >
+            <InputLabel>{t('forms.assignTo')}</InputLabel>
+            <Select
+              value={ownerTarget}
+              label={t('forms.assignTo')}
+              onChange={(e) => setOwnerTarget(e.target.value)}
+            >
+              <MenuItem value="self">{t('forms.meOption')}</MenuItem>
+              <MenuItem value="partner">{partnerDisplayName}</MenuItem>
+            </Select>
+          </FormControl>
+
+          {!hasConnectedPartner && (
+            <Alert severity="info" sx={{ mt: 1 }}>
+              {t('messages.connectPartnerToAssign')}
+            </Alert>
+          )}
+
+          <FormControlLabel
+            sx={{ mt: 2 }}
+            control={
+              <Switch
+                checked={isShared}
+                onChange={(e) => setIsShared(e.target.checked)}
+                disabled={!hasConnectedPartner}
+              />
+            }
+            label={t('forms.sharedPayment')}
+          />
+
+          {isShared && (
+            <>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>{t('forms.splitMode')}</InputLabel>
+                <Select
+                  value={splitMode}
+                  label={t('forms.splitMode')}
+                  onChange={(e) => setSplitMode(e.target.value)}
+                >
+                  <MenuItem value="half_half">{t('forms.splitHalfHalf')}</MenuItem>
+                  <MenuItem value="manual">{t('forms.splitManual')}</MenuItem>
+                </Select>
+              </FormControl>
+
+              {splitMode === 'manual' && (
+                <TextField
+                  label={t('forms.mySharePercent')}
+                  type="number"
+                  value={selfPercentage}
+                  onChange={(e) => setSelfPercentage(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  fullWidth
+                  margin="normal"
+                  inputProps={{ min: 0, max: 100, step: 1 }}
+                  helperText={t('forms.partnerSharePercent', { percent: 100 - selfPercentage })}
+                />
+              )}
+            </>
           )}
 
           <Tooltip title={t('forms.tooltips.sum')} arrow>

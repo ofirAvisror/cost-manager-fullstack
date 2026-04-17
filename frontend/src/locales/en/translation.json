@@ -7,6 +7,7 @@
     "barChart": "Bar Chart",
     "categories": "Categories",
     "budget": "Budget",
+    "partner": "Partner",
     "filters": "Filters",
     "notifications": "Notifications",
     "settings": "Settings",
@@ -63,6 +64,15 @@
     "income": "Income",
     "savings": "Savings",
     "savingsAction": "Savings Action",
+    "assignTo": "Assign To",
+    "meOption": "Me",
+    "partnerOption": "Partner",
+    "sharedPayment": "Shared payment (couple)",
+    "splitMode": "Split Mode",
+    "splitHalfHalf": "50/50",
+    "splitManual": "Manual",
+    "mySharePercent": "My share (%)",
+    "partnerSharePercent": "Partner share: {{percent}}%",
     "deposit": "Deposit",
     "withdrawal": "Withdrawal",
     "pleaseEnter": "Please enter",
@@ -130,7 +140,10 @@
     "pleaseEnterCategory": "Please enter a category",
     "pleaseEnterDescription": "Please enter a description",
     "pleaseEnterAmount": "Please enter an amount",
-    "pleaseEnterValidAmount": "Please enter a valid amount"
+    "pleaseEnterValidAmount": "Please enter a valid amount",
+    "connectPartnerToAssign": "Connect a partner to assign costs or use shared split.",
+    "sharedRequiresPartner": "Shared payment requires connected partner",
+    "manualSplitRangeError": "Manual split must be within 0-100%"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -142,6 +155,7 @@
     "lastMonthTotal": "Last Month Total Expenses",
     "categories": "Categories",
     "expensesByCategory": "Expenses by Category",
+    "managePartner": "Manage Partner",
     "increase": "increase",
     "decrease": "decrease"
   },
@@ -221,6 +235,54 @@
     "exporting": "Exporting...",
     "exportButton": "Export"
   },
+  "auth": {
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "birthday": "Birthday",
+    "email": "Email",
+    "password": "Password",
+    "rememberEmailPassword": "Remember email and password",
+    "pleaseWait": "Please wait...",
+    "register": "Register",
+    "login": "Login",
+    "haveAccountSignIn": "Have an account? Sign in",
+    "needAccountRegister": "Need an account? Register",
+    "errors": {
+      "emailPasswordRequired": "Email and password are required",
+      "fillRegistrationFields": "Fill all registration fields",
+      "authenticationFailed": "Authentication failed"
+    }
+  },
+  "partner": {
+    "title": "Partner & Monthly Settlement",
+    "statusTitle": "Partner Status",
+    "connectedWith": "Connected with: {{name}} ({{email}})",
+    "pendingSent": "Pending request sent.",
+    "pendingReceived": "You have a pending partner request.",
+    "noPartnerConnected": "No partner connected.",
+    "partnerEmail": "Partner Email",
+    "sendRequest": "Send Request",
+    "accept": "Accept",
+    "reject": "Reject",
+    "monthlySettlement": "Monthly Settlement",
+    "calculate": "Calculate",
+    "yourNet": "Your net: {{amount}}",
+    "partnerNet": "Partner net: {{amount}}",
+    "transferRequired": "User {{from}} owes {{amount}} to user {{to}}.",
+    "noTransferNeeded": "No transfer needed for this month.",
+    "noEmail": "no email",
+    "messages": {
+      "failedLoadingStatus": "Failed loading partner status",
+      "requestSent": "Partner request sent",
+      "failedSendingRequest": "Failed sending partner request",
+      "requestAccepted": "Partner request accepted",
+      "requestRejected": "Partner request rejected",
+      "failedHandlingRequest": "Failed handling request",
+      "failedLoadingSettlement": "Failed loading monthly settlement"
+    }
+  },
   "months": {
     "january": "January",
     "february": "February",
@@ -251,7 +313,8 @@
     "installInstructionsDesktopSafari": "Safari on desktop does not support PWA installation. Please use Chrome or Edge.",
     "installInstructionsFirefox": "To install: Firefox supports PWA installation. Click the browser menu (☰) > \"Install App\"",
     "installInstructionsGeneric": "To install: Use the browser menu to install the app. Chrome and Edge support PWA installation on desktop.",
-    "installRequiresHTTPS": "PWA installation requires a secure connection (HTTPS). Please access the site via HTTPS."
+    "installRequiresHTTPS": "PWA installation requires a secure connection (HTTPS). Please access the site via HTTPS.",
+    "logout": "Logout"
   },
   "currency": {
     "usd": "USD - US Dollar",

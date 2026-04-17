@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const costsController = require('../controllers/costs.controller');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, authenticate } = require('../middleware/auth');
 const { logEndpointAccess } = require('../middleware/logging');
 
 // Get costs with filters
@@ -17,7 +17,7 @@ router.get('/api/costs/:id', optionalAuth, (req, res, next) => {
 }, costsController.getCostById);
 
 // Create cost
-router.post('/api/add', optionalAuth, (req, res, next) => {
+router.post('/api/add', authenticate, (req, res, next) => {
   logEndpointAccess('/api/add', 'POST', req.user?.id || req.body?.userid);
   next();
 }, costsController.createCost);

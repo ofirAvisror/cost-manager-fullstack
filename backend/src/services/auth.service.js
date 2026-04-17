@@ -1,7 +1,17 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Counter = require('../models/Counter');
 const { logger } = require('../config/logger');
+
+async function getNextUserId() {
+  const counter = await Counter.findOneAndUpdate(
+    { key: 'user_id' },
+    { $inc: { seq: 1 }, $setOnInsert: { key: 'user_id' } },
+    { new: true, upsert: true }
+  );
+  return counter.seq;
+}
 
 /**
  * Register a new user
@@ -13,8 +23,9 @@ async function registerUser(userData) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Create new user
+  const userId = typeof id === 'number' && !isNaN(id) ? id : await getNextUserId();
   const user = new User({
-    id,
+    id: userId,
     first_name,
     last_name,
     birthday: new Date(birthday),

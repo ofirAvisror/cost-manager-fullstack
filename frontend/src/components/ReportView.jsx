@@ -73,6 +73,29 @@ export default function ReportView({ db }) {
     t('months.september'), t('months.october'), t('months.november'), t('months.december')
   ];
 
+  const getItemDay = function(item) {
+    if (!item || typeof item !== 'object') return '-';
+    if (item.Date && typeof item.Date === 'object' && item.Date.day !== undefined) {
+      return item.Date.day;
+    }
+    if (item.date && typeof item.date === 'object' && item.date.day !== undefined) {
+      return item.date.day;
+    }
+    const rawDate = item.created_at || item.createdAt || item.date;
+    if (rawDate) {
+      const parsed = new Date(rawDate);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.getDate();
+      }
+    }
+    return '-';
+  };
+
+  const getItemSum = function(item) {
+    const num = Number(item?.sum);
+    return Number.isFinite(num) ? num : 0;
+  };
+
   return (
     <Card 
       sx={{ 
@@ -319,10 +342,10 @@ export default function ReportView({ db }) {
                                 }}
                               >
                                 <TableCell>
-                                  <Chip label={cost.Date.day} size="small" color="error" variant="outlined" />
+                                  <Chip label={getItemDay(cost)} size="small" color="error" variant="outlined" />
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'error.main' }}>
-                                  {cost.sum.toFixed(2)}
+                                  {getItemSum(cost).toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                   <Chip label={cost.currency} size="small" />
@@ -373,10 +396,10 @@ export default function ReportView({ db }) {
                                 }}
                               >
                                 <TableCell>
-                                  <Chip label={income.Date.day} size="small" color="success" variant="outlined" />
+                                  <Chip label={getItemDay(income)} size="small" color="success" variant="outlined" />
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'success.main' }}>
-                                  {income.sum.toFixed(2)}
+                                  {getItemSum(income).toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                   <Chip label={income.currency} size="small" />
@@ -428,10 +451,10 @@ export default function ReportView({ db }) {
                                 }}
                               >
                                 <TableCell>
-                                  <Chip label={deposit.Date.day} size="small" color="info" variant="outlined" />
+                                  <Chip label={getItemDay(deposit)} size="small" color="info" variant="outlined" />
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'info.main' }}>
-                                  {deposit.sum.toFixed(2)}
+                                  {getItemSum(deposit).toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                   <Chip label={deposit.currency} size="small" />
@@ -452,10 +475,10 @@ export default function ReportView({ db }) {
                                 }}
                               >
                                 <TableCell>
-                                  <Chip label={withdrawal.Date.day} size="small" color="info" variant="outlined" />
+                                  <Chip label={getItemDay(withdrawal)} size="small" color="info" variant="outlined" />
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'error.main' }}>
-                                  -{withdrawal.sum.toFixed(2)}
+                                  -{getItemSum(withdrawal).toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                   <Chip label={withdrawal.currency} size="small" />

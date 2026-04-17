@@ -9,9 +9,21 @@ import translationEN from '../locales/en/translation.json';
 import translationHE from '../locales/he/translation.json';
 import translationES from '../locales/es/translation.json';
 
-// Get saved language from localStorage or default to 'en'
-const savedLanguage = localStorage.getItem('i18nextLng') || 'en';
-const defaultLanguage = (savedLanguage === 'he' || savedLanguage === 'es') ? savedLanguage : 'en';
+const SUPPORTED_LANGUAGES = ['en', 'he', 'es'];
+
+function normalizeLanguage(language) {
+  if (!language || typeof language !== 'string') return 'en';
+  const lower = language.toLowerCase();
+  if (lower.startsWith('he')) return 'he';
+  if (lower.startsWith('es')) return 'es';
+  return 'en';
+}
+
+// Prefer saved language, then browser language, then fallback to English.
+const savedLanguage = localStorage.getItem('i18nextLng');
+const browserLanguage = typeof navigator !== 'undefined' ? navigator.language : '';
+const normalizedLanguage = normalizeLanguage(savedLanguage || browserLanguage);
+const defaultLanguage = SUPPORTED_LANGUAGES.includes(normalizedLanguage) ? normalizedLanguage : 'en';
 
 i18n
   .use(initReactI18next)

@@ -35,18 +35,19 @@ import BudgetManager from './components/Budget/BudgetManager';
 import SavingsGoalsManager from './components/SavingsGoals/SavingsGoalsManager';
 import AdvancedFilters from './components/Filters/AdvancedFilters';
 import NotificationCenter from './components/Notifications/NotificationCenter';
+import PartnerManager from './components/Partner/PartnerManager';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
 const AUTH_STORAGE_KEY = 'cm_auth';
 const CREDS_STORAGE_KEY = 'cm_saved_credentials';
 
 function AuthScreen({ onAuthenticated }) {
+  const { t } = useTranslation();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberCreds, setRememberCreds] = useState(true);
   const [form, setForm] = useState({
-    id: '',
     first_name: '',
     last_name: '',
     birthday: '',
@@ -81,18 +82,17 @@ function AuthScreen({ onAuthenticated }) {
 
     try {
       if (!form.email || !form.password) {
-        throw new Error('Email and password are required');
+        throw new Error(t('auth.errors.emailPasswordRequired'));
       }
 
       let payload;
       let endpoint;
       if (isRegister) {
-        if (!form.id || !form.first_name || !form.last_name || !form.birthday) {
-          throw new Error('Fill all registration fields');
+        if (!form.first_name || !form.last_name || !form.birthday) {
+          throw new Error(t('auth.errors.fillRegistrationFields'));
         }
         endpoint = '/api/register';
         payload = {
-          id: parseInt(form.id, 10),
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
           birthday: form.birthday,
@@ -115,7 +115,7 @@ function AuthScreen({ onAuthenticated }) {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data?.message || 'Authentication failed');
+        throw new Error(data?.message || t('auth.errors.authenticationFailed'));
       }
 
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
@@ -129,7 +129,7 @@ function AuthScreen({ onAuthenticated }) {
       }
       onAuthenticated(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      setError(err instanceof Error ? err.message : t('auth.errors.authenticationFailed'));
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,7 @@ function AuthScreen({ onAuthenticated }) {
       <Card sx={{ width: '100%', maxWidth: 420, borderRadius: 3, boxShadow: 4 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-            {isRegister ? 'Create account' : 'Sign in'}
+            {isRegister ? t('auth.createAccount') : t('auth.signIn')}
           </Typography>
 
           {error && (
@@ -163,26 +163,19 @@ function AuthScreen({ onAuthenticated }) {
               {isRegister && (
                 <>
                   <TextField
-                    label="User ID"
-                    type="number"
-                    value={form.id}
-                    onChange={(e) => updateField('id', e.target.value)}
-                    required
-                  />
-                  <TextField
-                    label="First name"
+                    label={t('auth.firstName')}
                     value={form.first_name}
                     onChange={(e) => updateField('first_name', e.target.value)}
                     required
                   />
                   <TextField
-                    label="Last name"
+                    label={t('auth.lastName')}
                     value={form.last_name}
                     onChange={(e) => updateField('last_name', e.target.value)}
                     required
                   />
                   <TextField
-                    label="Birthday"
+                    label={t('auth.birthday')}
                     type="date"
                     value={form.birthday}
                     onChange={(e) => updateField('birthday', e.target.value)}
@@ -193,14 +186,14 @@ function AuthScreen({ onAuthenticated }) {
               )}
 
               <TextField
-                label="Email"
+                label={t('auth.email')}
                 type="email"
                 value={form.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 required
               />
               <TextField
-                label="Password"
+                label={t('auth.password')}
                 type="password"
                 value={form.password}
                 onChange={(e) => updateField('password', e.target.value)}
@@ -213,10 +206,10 @@ function AuthScreen({ onAuthenticated }) {
                     onChange={(e) => setRememberCreds(e.target.checked)}
                   />
                 }
-                label="Remember email and password"
+                label={t('auth.rememberEmailPassword')}
               />
               <Button type="submit" variant="contained" disabled={loading}>
-                {loading ? 'Please wait...' : isRegister ? 'Register' : 'Login'}
+                {loading ? t('auth.pleaseWait') : isRegister ? t('auth.register') : t('auth.login')}
               </Button>
               <Button
                 type="button"
@@ -225,7 +218,7 @@ function AuthScreen({ onAuthenticated }) {
                   setError('');
                 }}
               >
-                {isRegister ? 'Have an account? Sign in' : 'Need an account? Register'}
+                {isRegister ? t('auth.haveAccountSignIn') : t('auth.needAccountRegister')}
               </Button>
             </Stack>
           </Box>
@@ -243,6 +236,7 @@ function AppInner({ auth, onLogout }) {
   const [db, setDb] = useState(null);
   const [dbError, setDbError] = useState('');
   const [currentView, setCurrentView] = useState('dashboard');
+  const [partnerNavLabel, setPartnerNavLabel] = useState('');
   const { notifications, checkBudgets } = useNotifications();
 
   /**
@@ -276,13 +270,40 @@ function AppInner({ auth, onLogout }) {
     }
   }, [db, checkBudgets]);
 
+  useEffect(function loadPartnerNavLabel() {
+    let cancelled = false;
+
+    async function loadPartner() {
+      if (!db || typeof db.getPartnerStatus !== 'function') return;
+      try {
+        const status = await db.getPartnerStatus();
+        if (cancelled) return;
+        if (status?.status === 'connected' && status?.partner) {
+          const fullName = `${status.partner.first_name || ''} ${status.partner.last_name || ''}`.trim();
+          setPartnerNavLabel(fullName || status.partner.email || '');
+        } else {
+          setPartnerNavLabel('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setPartnerNavLabel('');
+        }
+      }
+    }
+
+    loadPartner();
+    return function cleanup() {
+      cancelled = true;
+    };
+  }, [db, currentView]);
+
   /**
    * Renders the current view based on selection
    */
   const renderView = function() {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard db={db} />;
+        return <Dashboard db={db} onViewChange={setCurrentView} />;
       case 'add-cost':
         return <AddCostForm db={db} />;
       case 'report':
@@ -303,8 +324,10 @@ function AppInner({ auth, onLogout }) {
         return <NotificationCenter />;
       case 'settings':
         return <Settings />;
+      case 'partner':
+        return <PartnerManager db={db} />;
       default:
-        return <Dashboard db={db} />;
+        return <Dashboard db={db} onViewChange={setCurrentView} />;
     }
   };
 
@@ -326,6 +349,7 @@ function AppInner({ auth, onLogout }) {
         notificationCount={notifications.filter(n => !n.read).length}
         auth={auth}
         onLogout={onLogout}
+        partnerNavLabel={partnerNavLabel}
       >
         {dbError && (
           <Fade in={!!dbError}>

@@ -44,6 +44,19 @@ const userSchema = new mongoose.Schema({
     },
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false // Don't return password in queries by default
+  },
+  partner_id: {
+    type: Number,
+    default: null
+  },
+  partner_status: {
+    type: String,
+    enum: ['none', 'pending_sent', 'pending_received', 'connected'],
+    default: 'none'
+  },
+  partner_requested_by: {
+    type: Number,
+    default: null
   }
 }, { timestamps: true });
 

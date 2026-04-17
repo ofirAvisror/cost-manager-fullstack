@@ -7,6 +7,7 @@
     "barChart": "תרשים עמודות",
     "categories": "קטגוריות",
     "budget": "תקציב",
+    "partner": "פרטנר",
     "filters": "מסננים",
     "notifications": "התראות",
     "settings": "הגדרות",
@@ -63,6 +64,15 @@
     "income": "הכנסה",
     "savings": "חסכונות",
     "savingsAction": "פעולת חסכונות",
+    "assignTo": "שיוך ל",
+    "meOption": "אני",
+    "partnerOption": "פרטנר",
+    "sharedPayment": "תשלום משותף (זוג)",
+    "splitMode": "אופן חלוקה",
+    "splitHalfHalf": "50/50",
+    "splitManual": "ידני",
+    "mySharePercent": "החלק שלי (%)",
+    "partnerSharePercent": "החלק של הפרטנר: {{percent}}%",
     "deposit": "הפקדה",
     "withdrawal": "משיכה",
     "pleaseEnter": "אנא הזן",
@@ -130,7 +140,10 @@
     "pleaseEnterCategory": "אנא הזן קטגוריה",
     "pleaseEnterDescription": "אנא הזן תיאור",
     "pleaseEnterAmount": "אנא הזן סכום",
-    "pleaseEnterValidAmount": "אנא הזן סכום תקין"
+    "pleaseEnterValidAmount": "אנא הזן סכום תקין",
+    "connectPartnerToAssign": "חבר פרטנר כדי לאפשר שיוך או חלוקה משותפת.",
+    "sharedRequiresPartner": "תשלום משותף דורש פרטנר מחובר",
+    "manualSplitRangeError": "חלוקה ידנית חייבת להיות בטווח 0-100%"
   },
   "dashboard": {
     "title": "לוח בקרה",
@@ -142,6 +155,7 @@
     "lastMonthTotal": "סה\"כ הוצאות החודש שעבר",
     "categories": "קטגוריות",
     "expensesByCategory": "הוצאות לפי קטגוריה",
+    "managePartner": "ניהול פרטנר",
     "increase": "עלייה",
     "decrease": "ירידה"
   },
@@ -221,6 +235,54 @@
     "exporting": "מייצא...",
     "exportButton": "ייצא"
   },
+  "auth": {
+    "createAccount": "יצירת חשבון",
+    "signIn": "התחברות",
+    "firstName": "שם פרטי",
+    "lastName": "שם משפחה",
+    "birthday": "תאריך לידה",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "rememberEmailPassword": "זכור אימייל וסיסמה",
+    "pleaseWait": "אנא המתן...",
+    "register": "הרשמה",
+    "login": "התחברות",
+    "haveAccountSignIn": "יש לך חשבון? להתחברות",
+    "needAccountRegister": "צריך חשבון? להרשמה",
+    "errors": {
+      "emailPasswordRequired": "אימייל וסיסמה הם שדות חובה",
+      "fillRegistrationFields": "יש למלא את כל שדות ההרשמה",
+      "authenticationFailed": "אימות נכשל"
+    }
+  },
+  "partner": {
+    "title": "פרטנר והתחשבנות חודשית",
+    "statusTitle": "סטטוס פרטנר",
+    "connectedWith": "מחובר עם: {{name}} ({{email}})",
+    "pendingSent": "בקשת פרטנר נשלחה וממתינה לאישור.",
+    "pendingReceived": "יש לך בקשת פרטנר ממתינה.",
+    "noPartnerConnected": "אין פרטנר מחובר.",
+    "partnerEmail": "אימייל של פרטנר",
+    "sendRequest": "שלח בקשה",
+    "accept": "אשר",
+    "reject": "דחה",
+    "monthlySettlement": "התחשבנות חודשית",
+    "calculate": "חשב",
+    "yourNet": "הנטו שלך: {{amount}}",
+    "partnerNet": "הנטו של הפרטנר: {{amount}}",
+    "transferRequired": "משתמש {{from}} חייב {{amount}} למשתמש {{to}}.",
+    "noTransferNeeded": "לא נדרשת העברה לחודש הזה.",
+    "noEmail": "ללא אימייל",
+    "messages": {
+      "failedLoadingStatus": "טעינת סטטוס פרטנר נכשלה",
+      "requestSent": "בקשת פרטנר נשלחה",
+      "failedSendingRequest": "שליחת בקשת פרטנר נכשלה",
+      "requestAccepted": "בקשת פרטנר אושרה",
+      "requestRejected": "בקשת פרטנר נדחתה",
+      "failedHandlingRequest": "טיפול בבקשה נכשל",
+      "failedLoadingSettlement": "טעינת ההתחשבנות החודשית נכשלה"
+    }
+  },
   "months": {
     "january": "ינואר",
     "february": "פברואר",
@@ -251,7 +313,8 @@
     "installInstructionsDesktopSafari": "Safari במחשב לא תומך בהתקנת PWA. אנא השתמש ב-Chrome או Edge.",
     "installInstructionsFirefox": "להתקנה: Firefox תומך בהתקנת PWA. לחץ על תפריט הדפדפן (☰) > \"התקן את האפליקציה\"",
     "installInstructionsGeneric": "להתקנה: השתמש בתפריט הדפדפן כדי להתקין את האפליקציה. Chrome ו-Edge תומכים בהתקנת PWA במחשב.",
-    "installRequiresHTTPS": "התקנת PWA דורשת חיבור מאובטח (HTTPS). אנא גש לאתר דרך HTTPS."
+    "installRequiresHTTPS": "התקנת PWA דורשת חיבור מאובטח (HTTPS). אנא גש לאתר דרך HTTPS.",
+    "logout": "התנתקות"
   },
   "currency": {
     "usd": "USD - דולר אמריקאי",

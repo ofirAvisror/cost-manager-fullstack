@@ -42,8 +42,9 @@ import ES from 'country-flag-icons/react/3x2/ES';
  * @param {number} [props.notificationCount=0] - Number of notifications
  * @param {Object|null} [props.auth=null] - Auth payload
  * @param {function|null} [props.onLogout=null] - Logout handler
+ * @param {string} [props.partnerNavLabel=''] - Partner display name
  */
-export default function Header({ onMenuClick, notificationCount = 0, auth = null, onLogout = null }) {
+export default function Header({ onMenuClick, notificationCount = 0, auth = null, onLogout = null, partnerNavLabel = '' }) {
   const { mode, toggleMode } = useTheme();
   const { t, i18n } = useTranslation();
   const { notifications, markAsRead, markAllAsRead, clearNotification } = useNotifications();
@@ -222,9 +223,17 @@ export default function Header({ onMenuClick, notificationCount = 0, auth = null
               variant="outlined"
             />
           )}
+          {partnerNavLabel && (
+            <Chip
+              label={partnerNavLabel}
+              size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+              variant="outlined"
+            />
+          )}
           {onLogout && (
             <Button color="inherit" onClick={onLogout}>
-              Logout
+              {t('header.logout')}
             </Button>
           )}
 

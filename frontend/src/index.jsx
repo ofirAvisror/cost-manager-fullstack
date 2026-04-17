@@ -16,8 +16,9 @@ root.render(
   </React.StrictMode>
 );
 
-// Register Service Worker for PWA support
-if ('serviceWorker' in navigator) {
+// Register Service Worker for PWA support (production only).
+// In development it can cache stale bundles and hide fresh code changes.
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
     .then(function(registration) {
       // Check for updates
@@ -51,5 +52,20 @@ if ('serviceWorker' in navigator) {
       refreshing = true;
       window.location.reload();
     }
+  });
+}
+
+// Ensure stale service workers are removed in development.
+if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'production') {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    Promise.all(registrations.map(function(registration) {
+      return registration.unregister();
+    })).then(function(results) {
+      const hadRegistrations = results.some(Boolean);
+      if (hadRegistrations && !sessionStorage.getItem('sw-dev-cleaned')) {
+        sessionStorage.setItem('sw-dev-cleaned', '1');
+        window.location.reload();
+      }
+    });
   });
 }

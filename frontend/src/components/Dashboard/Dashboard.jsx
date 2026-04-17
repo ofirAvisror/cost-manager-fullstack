@@ -9,7 +9,8 @@ import {
   Typography,
   Paper,
   Alert,
-  Skeleton
+  Skeleton,
+  Button
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import StatCard from './StatCard';
@@ -23,12 +24,18 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 // Neutral colors for expenses (avoiding green for income and blue for savings)
 const COLORS = ['#FF8042', '#FFBB28', '#FF7C7C', '#FFC658', '#FF6B9D', '#FF8C42', '#FFA500', '#FF6347', '#FF69B4', '#FF8C00'];
 
+function toSafeNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
 /**
  * Dashboard component
  * @param {Object} props - Component props
  * @param {Object|null} props.db - Database instance
+ * @param {Function} [props.onViewChange] - Navigate to another app view
  */
-export default function Dashboard({ db }) {
+export default function Dashboard({ db, onViewChange }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -107,25 +114,39 @@ export default function Dashboard({ db }) {
   }
 
   // Prepare pie chart data
-  const pieData = Object.keys(stats.totalByCategory).map(function(category) {
+  const pieData = Object.keys(stats.totalByCategory || {}).map(function(category) {
     return {
       name: category,
-      value: stats.totalByCategory[category]
+      value: toSafeNumber(stats.totalByCategory[category])
     };
   });
+
+  const totalThisMonth = toSafeNumber(stats.totalThisMonth);
+  const totalIncomes = toSafeNumber(stats.totalIncomes);
+  const totalSavings = toSafeNumber(stats.totalSavings);
+  const balance = toSafeNumber(stats.balance);
+  const averageDaily = toSafeNumber(stats.averageDaily);
+  const totalLastMonth = toSafeNumber(stats.totalLastMonth);
+  const changePercentage = toSafeNumber(stats.changePercentage);
+  const statsCurrency = stats.currency || currency;
 
   return (
     <Box>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 4 }}>
         {t('dashboard.title')}
       </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Button variant="outlined" onClick={() => onViewChange?.('partner')}>
+          {t('dashboard.managePartner')}
+        </Button>
+      </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.totalThisMonth')}
-            value={`${stats.totalThisMonth.toFixed(2)} ${stats.currency}`}
-            change={stats.changePercentage}
+            value={`${totalThisMonth.toFixed(2)} ${statsCurrency}`}
+            change={changePercentage}
             icon={<AttachMoneyIcon sx={{ fontSize: 32 }} />}
             color="#ef4444"
           />
@@ -134,7 +155,7 @@ export default function Dashboard({ db }) {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.totalIncomes')}
-            value={`${stats.totalIncomes.toFixed(2)} ${stats.currency}`}
+            value={`${totalIncomes.toFixed(2)} ${statsCurrency}`}
             icon={<TrendingUpIcon sx={{ fontSize: 32 }} />}
             color="#10b981"
           />
@@ -143,7 +164,7 @@ export default function Dashboard({ db }) {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.totalSavings')}
-            value={`${stats.totalSavings.toFixed(2)} ${stats.currency}`}
+            value={`${totalSavings.toFixed(2)} ${statsCurrency}`}
             icon={<CategoryIcon sx={{ fontSize: 32 }} />}
             color="#3b82f6"
           />
@@ -152,16 +173,16 @@ export default function Dashboard({ db }) {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.balance')}
-            value={`${stats.balance.toFixed(2)} ${stats.currency}`}
+            value={`${balance.toFixed(2)} ${statsCurrency}`}
             icon={<AttachMoneyIcon sx={{ fontSize: 32 }} />}
-            color={stats.balance >= 0 ? "#10b981" : "#ef4444"}
+            color={balance >= 0 ? "#10b981" : "#ef4444"}
           />
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.averageDaily')}
-            value={`${stats.averageDaily.toFixed(2)} ${stats.currency}`}
+            value={`${averageDaily.toFixed(2)} ${statsCurrency}`}
             icon={<CalendarTodayIcon sx={{ fontSize: 32 }} />}
             color="#f59e0b"
           />
@@ -170,7 +191,7 @@ export default function Dashboard({ db }) {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.lastMonthTotal')}
-            value={`${stats.totalLastMonth.toFixed(2)} ${stats.currency}`}
+            value={`${totalLastMonth.toFixed(2)} ${statsCurrency}`}
             icon={<TrendingUpIcon sx={{ fontSize: 32 }} />}
             color="#8b5cf6"
           />
@@ -218,7 +239,7 @@ export default function Dashboard({ db }) {
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `${value.toFixed(2)} ${currency}`} />
+                <Tooltip formatter={(value) => `${toSafeNumber(value).toFixed(2)} ${statsCurrency}`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

@@ -23,6 +23,7 @@ export default function Layout({
   notificationCount = 0,
   auth = null,
   onLogout = null,
+  partnerNavLabel = '',
 }) {
   const { i18n } = useTranslation();
   const theme = useTheme();
@@ -47,6 +48,7 @@ export default function Layout({
         notificationCount={notificationCount}
         auth={auth}
         onLogout={onLogout}
+        partnerNavLabel={partnerNavLabel}
       />
       
       {/* Sidebar - will be positioned based on anchor prop */}
@@ -56,6 +58,7 @@ export default function Layout({
         onClose={handleSidebarClose}
         currentView={currentView}
         onViewChange={onViewChange}
+        partnerNavLabel={partnerNavLabel}
       />
       
       {/* Main content */}

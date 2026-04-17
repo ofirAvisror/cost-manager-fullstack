@@ -7,6 +7,7 @@
     "barChart": "Gráfico de Barras",
     "categories": "Categorías",
     "budget": "Presupuesto",
+    "partner": "Pareja",
     "filters": "Filtros",
     "notifications": "Notificaciones",
     "settings": "Configuración",
@@ -63,6 +64,15 @@
     "income": "Ingreso",
     "savings": "Ahorros",
     "savingsAction": "Acción de Ahorro",
+    "assignTo": "Asignar a",
+    "meOption": "Yo",
+    "partnerOption": "Pareja",
+    "sharedPayment": "Pago compartido (pareja)",
+    "splitMode": "Modo de división",
+    "splitHalfHalf": "50/50",
+    "splitManual": "Manual",
+    "mySharePercent": "Mi parte (%)",
+    "partnerSharePercent": "Parte de la pareja: {{percent}}%",
     "deposit": "Depósito",
     "withdrawal": "Retiro",
     "pleaseEnter": "Por favor ingrese",
@@ -130,7 +140,10 @@
     "pleaseEnterCategory": "Por favor ingrese una categoría",
     "pleaseEnterDescription": "Por favor ingrese una descripción",
     "pleaseEnterAmount": "Por favor ingrese una cantidad",
-    "pleaseEnterValidAmount": "Por favor ingrese una cantidad válida"
+    "pleaseEnterValidAmount": "Por favor ingrese una cantidad válida",
+    "connectPartnerToAssign": "Conecta una pareja para poder asignar o dividir gastos.",
+    "sharedRequiresPartner": "El pago compartido requiere una pareja conectada",
+    "manualSplitRangeError": "La división manual debe estar entre 0-100%"
   },
   "dashboard": {
     "title": "Panel de Control",
@@ -142,6 +155,7 @@
     "lastMonthTotal": "Total de Gastos del Mes Pasado",
     "categories": "Categorías",
     "expensesByCategory": "Gastos por Categoría",
+    "managePartner": "Gestionar Pareja",
     "increase": "aumento",
     "decrease": "disminución"
   },
@@ -221,6 +235,54 @@
     "exporting": "Exportando...",
     "exportButton": "Exportar"
   },
+  "auth": {
+    "createAccount": "Crear cuenta",
+    "signIn": "Iniciar sesión",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "birthday": "Fecha de nacimiento",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "rememberEmailPassword": "Recordar correo y contraseña",
+    "pleaseWait": "Por favor espera...",
+    "register": "Registrarse",
+    "login": "Entrar",
+    "haveAccountSignIn": "¿Ya tienes cuenta? Inicia sesión",
+    "needAccountRegister": "¿Necesitas una cuenta? Regístrate",
+    "errors": {
+      "emailPasswordRequired": "El correo y la contraseña son obligatorios",
+      "fillRegistrationFields": "Completa todos los campos de registro",
+      "authenticationFailed": "La autenticación falló"
+    }
+  },
+  "partner": {
+    "title": "Pareja y liquidación mensual",
+    "statusTitle": "Estado de pareja",
+    "connectedWith": "Conectado con: {{name}} ({{email}})",
+    "pendingSent": "Solicitud pendiente enviada.",
+    "pendingReceived": "Tienes una solicitud de pareja pendiente.",
+    "noPartnerConnected": "No hay pareja conectada.",
+    "partnerEmail": "Correo de la pareja",
+    "sendRequest": "Enviar solicitud",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "monthlySettlement": "Liquidación mensual",
+    "calculate": "Calcular",
+    "yourNet": "Tu neto: {{amount}}",
+    "partnerNet": "Neto de la pareja: {{amount}}",
+    "transferRequired": "El usuario {{from}} debe {{amount}} al usuario {{to}}.",
+    "noTransferNeeded": "No se necesita transferencia para este mes.",
+    "noEmail": "sin correo",
+    "messages": {
+      "failedLoadingStatus": "Error al cargar el estado de pareja",
+      "requestSent": "Solicitud de pareja enviada",
+      "failedSendingRequest": "Error al enviar la solicitud de pareja",
+      "requestAccepted": "Solicitud de pareja aceptada",
+      "requestRejected": "Solicitud de pareja rechazada",
+      "failedHandlingRequest": "Error al procesar la solicitud",
+      "failedLoadingSettlement": "Error al cargar la liquidación mensual"
+    }
+  },
   "months": {
     "january": "Enero",
     "february": "Febrero",
@@ -251,7 +313,8 @@
     "installInstructionsDesktopSafari": "Safari en escritorio no admite la instalación de PWA. Por favor, usa Chrome o Edge.",
     "installInstructionsFirefox": "Para instalar: Firefox admite la instalación de PWA. Haz clic en el menú del navegador (☰) > \"Instalar aplicación\"",
     "installInstructionsGeneric": "Para instalar: Usa el menú del navegador para instalar la aplicación. Chrome y Edge admiten la instalación de PWA en escritorio.",
-    "installRequiresHTTPS": "La instalación de PWA requiere una conexión segura (HTTPS). Por favor, accede al sitio a través de HTTPS."
+    "installRequiresHTTPS": "La instalación de PWA requiere una conexión segura (HTTPS). Por favor, accede al sitio a través de HTTPS.",
+    "logout": "Cerrar sesión"
   },
   "currency": {
     "usd": "USD - Dólar Estadounidense",

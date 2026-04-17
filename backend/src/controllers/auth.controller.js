@@ -10,15 +10,15 @@ async function register(req, res) {
     const { id, first_name, last_name, birthday, email, password } = req.body;
 
     // Validate required fields
-    if (!id || !first_name || !last_name || !birthday || !email || !password) {
+    if (!first_name || !last_name || !birthday || !email || !password) {
       return res.status(400).json({ 
         id: 'VALIDATION_ERROR',
-        message: 'Missing required fields: id, first_name, last_name, birthday, email, and password are required' 
+        message: 'Missing required fields: first_name, last_name, birthday, email, and password are required' 
       });
     }
 
-    // Validate id is a number
-    if (typeof id !== 'number' || isNaN(id)) {
+    // Validate id is a number if provided (backward compatibility)
+    if (id !== undefined && (typeof id !== 'number' || isNaN(id))) {
       return res.status(400).json({ 
         id: 'VALIDATION_ERROR',
         message: 'id must be a number' 

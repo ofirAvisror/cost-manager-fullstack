@@ -136,13 +136,27 @@ function deserializeCost(cost) {
     description: cost.description,
     type: restoredType || 'expense',
     date: toFrontendDate(cost.created_at || cost.createdAt || new Date()),
+    ownerUserId: cost.owner_userid || cost.userid,
+    paidByUserId: cost.paid_by_userid || cost.userid,
+    isShared: !!cost.is_shared,
+    sharedWithUserId: cost.shared_with_userid || null,
+    sharedSplitMode: cost.shared_split_mode || 'half_half',
+    sharedSplit: cost.shared_split || { self_percentage: 50, partner_percentage: 50 },
   };
 }
 
 export async function openCostsDB() {
   const dbObject = {
     async addCost(cost) {
-      const payload = serializeCost(cost);
+      const payload = {
+        ...serializeCost(cost),
+        owner_userid: cost.ownerUserId || getUserId(),
+        paid_by_userid: cost.paidByUserId || getUserId(),
+        is_shared: !!cost.isShared,
+        shared_with_userid: cost.sharedWithUserId || null,
+        shared_split_mode: cost.sharedSplitMode || 'half_half',
+        shared_split: cost.sharedSplit || { self_percentage: 50, partner_percentage: 50 },
+      };
       await apiRequest('/api/add', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -150,7 +164,7 @@ export async function openCostsDB() {
     },
 
     async getAllCosts() {
-      const items = await apiRequest(`/api/costs?userid=${getUserId()}`);
+      const items = await apiRequest(`/api/costs?userid=${getUserId()}&includePartner=true`);
       return (items || []).map(deserializeCost);
     },
 
@@ -367,6 +381,28 @@ export async function openCostsDB() {
       await apiRequest(`/api/goals/${id}`, {
         method: 'DELETE',
       });
+    },
+
+    async requestPartner(partnerEmail) {
+      return apiRequest('/api/partners/request', {
+        method: 'POST',
+        body: JSON.stringify({ partner_email: partnerEmail }),
+      });
+    },
+
+    async respondPartner(action) {
+      return apiRequest('/api/partners/respond', {
+        method: 'POST',
+        body: JSON.stringify({ action }),
+      });
+    },
+
+    async getPartnerStatus() {
+      return apiRequest('/api/partners/status');
+    },
+
+    async getMonthlySettlement(year, month) {
+      return apiRequest(`/api/settlement/monthly?year=${year}&month=${month}`);
     },
   };
 

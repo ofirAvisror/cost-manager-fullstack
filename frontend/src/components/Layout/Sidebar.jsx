@@ -28,6 +28,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SavingsIcon from '@mui/icons-material/Savings';
+import PeopleIcon from '@mui/icons-material/People';
 
 const drawerWidth = 280;
 
@@ -41,7 +42,7 @@ const drawerWidth = 280;
  * @param {string} props.currentView - Current active view
  * @param {function} props.onViewChange - Function to change view
  */
-export default function Sidebar({ open, onClose, currentView, onViewChange }) {
+export default function Sidebar({ open, onClose, currentView, onViewChange, partnerNavLabel = '' }) {
   const { t, i18n } = useTranslation();
   const muiTheme = useMUITheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
@@ -58,6 +59,7 @@ export default function Sidebar({ open, onClose, currentView, onViewChange }) {
     { id: 'categories', label: t('navigation.categories'), icon: <CategoryIcon /> },
     { id: 'budget', label: t('navigation.budget'), icon: <AccountBalanceIcon /> },
     { id: 'savings-goals', label: t('navigation.savingsGoals'), icon: <SavingsIcon /> },
+    { id: 'partner', label: partnerNavLabel || t('navigation.partner'), icon: <PeopleIcon /> },
     { id: 'filters', label: t('navigation.filters'), icon: <FilterListIcon /> },
     { id: 'notifications', label: t('navigation.notifications'), icon: <NotificationsIcon /> },
     { id: 'settings', label: t('navigation.settings'), icon: <SettingsIcon /> },

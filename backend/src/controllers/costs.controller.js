@@ -7,13 +7,30 @@ const { logger } = require('../config/logger');
  */
 async function createCost(req, res) {
   try {
-    const { type, description, category, userid, sum, tags, recurring, created_at, currency, payment_method } = req.body;
+    const {
+      type,
+      description,
+      category,
+      userid,
+      owner_userid,
+      paid_by_userid,
+      is_shared,
+      shared_with_userid,
+      shared_split_mode,
+      shared_split,
+      sum,
+      tags,
+      recurring,
+      created_at,
+      currency,
+      payment_method
+    } = req.body;
 
     // Validate required fields
-    if (!type || !description || !category || (userid === undefined && !req.user) || sum === undefined) {
+    if (!type || !description || !category || sum === undefined) {
       return res.status(400).json({ 
         id: 'VALIDATION_ERROR',
-        message: 'Missing required fields: type, description, category, userid, and sum are required' 
+        message: 'Missing required fields: type, description, category, and sum are required' 
       });
     }
 
@@ -52,7 +69,27 @@ async function createCost(req, res) {
       });
     }
 
-    const cost = await costService.createCost(req.body, req.user?.id);
+    const cost = await costService.createCost(
+      {
+        type,
+        description,
+        category,
+        userid,
+        owner_userid,
+        paid_by_userid,
+        is_shared,
+        shared_with_userid,
+        shared_split_mode,
+        shared_split,
+        sum,
+        tags,
+        recurring,
+        created_at,
+        currency,
+        payment_method
+      },
+      req.user?.id
+    );
     res.status(201).json(cost);
   } catch (error) {
     logger.error('Error creating cost:', error.message);
@@ -84,7 +121,7 @@ async function createCost(req, res) {
 async function getCosts(req, res) {
   try {
     // Support both userId and userid query parameters
-    const { userId, userid, type, category, startDate, endDate, tags, recurring, limit, skip } = req.query;
+    const { userId, userid, type, category, startDate, endDate, tags, recurring, limit, skip, includePartner } = req.query;
     
     // If user is authenticated, use their userid from token
     const userIdToUse = req.user?.id || userId || userid;
@@ -95,9 +132,19 @@ async function getCosts(req, res) {
         message: 'userid is required (or use authentication token)'
       });
     }
+
+    let userIdsToUse = [userIdToUse];
+    if ((includePartner === 'true' || includePartner === true) && req.user?.id) {
+      const User = require('../models/User');
+      const me = await User.findOne({ id: req.user.id });
+      if (me?.partner_status === 'connected' && me.partner_id) {
+        userIdsToUse = [req.user.id, me.partner_id];
+      }
+    }
     
     const costs = await costService.getCosts({
       userid: userIdToUse,
+      userids: userIdsToUse,
       type,
       category,
       startDate,

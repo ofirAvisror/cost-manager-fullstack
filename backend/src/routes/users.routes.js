@@ -17,9 +17,15 @@ router.post('/api/login', (req, res, next) => {
   next();
 }, authController.login);
 
-// Create user (backward compatibility)
-router.post('/api/add', (req, res, next) => {
-  logEndpointAccess('/api/add', 'POST', req.body?.id);
+// Create user (backward compatibility without clashing /api/add cost endpoint)
+router.post('/api/users/add', (req, res, next) => {
+  logEndpointAccess('/api/users/add', 'POST', req.body?.id);
+  next();
+}, usersController.createUser);
+
+// Additional compatibility alias
+router.post('/api/add-user', (req, res, next) => {
+  logEndpointAccess('/api/add-user', 'POST', req.body?.id);
   next();
 }, usersController.createUser);
 

@@ -15,6 +15,8 @@ const reportsRoutes = require('./src/routes/reports.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 const logsRoutes = require('./src/routes/logs.routes');
 const categoriesRoutes = require('./src/routes/categories.routes');
+const partnersRoutes = require('./src/routes/partners.routes');
+const settlementRoutes = require('./src/routes/settlement.routes');
 
 const app = express();
 const PORT = process.env.PORT || process.env.PORT_USERS || 3000;
@@ -42,7 +44,7 @@ app.get('/', (req, res) => {
   res.status(200).json({
     status: 'ok',
     service: 'cost-manager-all-in-one',
-    services: ['users', 'goals', 'budgets', 'costs', 'analytics', 'reports', 'admin', 'logs'],
+    services: ['users', 'goals', 'budgets', 'costs', 'analytics', 'reports', 'admin', 'logs', 'categories', 'partners'],
     timestamp: new Date().toISOString()
   });
 });
@@ -57,6 +59,8 @@ app.use('/', reportsRoutes);
 app.use('/', adminRoutes);
 app.use('/', logsRoutes);
 app.use('/', categoriesRoutes);
+app.use('/', partnersRoutes);
+app.use('/', settlementRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

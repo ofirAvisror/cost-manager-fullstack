@@ -9,20 +9,93 @@ const INCOME_CATEGORIES = ['salary', 'freelance', 'investment', 'business', 'gif
  * Create a new cost
  */
 async function createCost(costData, userIdFromToken = null) {
-  let { type, description, category, userid, sum, tags, recurring, created_at, currency, payment_method } = costData;
+  let {
+    type,
+    description,
+    category,
+    userid,
+    owner_userid,
+    paid_by_userid,
+    is_shared,
+    shared_with_userid,
+    shared_split_mode,
+    shared_split,
+    sum,
+    tags,
+    recurring,
+    created_at,
+    currency,
+    payment_method
+  } = costData;
   
-  // If user is authenticated, use their userid from token
-  if (userIdFromToken) {
-    userid = userIdFromToken;
-  }
+  const actorUserId = userIdFromToken || userid;
+  if (!actorUserId) throw new Error('userid is required');
+
+  const ownerUserId = parseInt(owner_userid || userid || actorUserId, 10);
+  const paidByUserId = parseInt(paid_by_userid || actorUserId, 10);
+  const isShared = is_shared === true || is_shared === 'true';
 
   const normalizedType = type.toLowerCase();
   const normalizedCategory = category.toLowerCase();
 
   // Validate user exists
-  const user = await User.findOne({ id: userid });
-  if (!user) {
+  const [actor, owner, payer] = await Promise.all([
+    User.findOne({ id: parseInt(actorUserId, 10) }),
+    User.findOne({ id: ownerUserId }),
+    User.findOne({ id: paidByUserId }),
+  ]);
+
+  if (!actor || !owner || !payer) {
     throw new Error('User not found');
+  }
+
+  // Allow assigning owner only to self or connected partner.
+  const canAssignToOwner =
+    owner.id === actor.id ||
+    (actor.partner_status === 'connected' && actor.partner_id === owner.id);
+  if (!canAssignToOwner) {
+    throw new Error('owner_userid must be self or connected partner');
+  }
+
+  // Validate payer belongs to same self/partner scope.
+  const canUsePayer =
+    payer.id === actor.id ||
+    (actor.partner_status === 'connected' && actor.partner_id === payer.id);
+  if (!canUsePayer) {
+    throw new Error('paid_by_userid must be self or connected partner');
+  }
+
+  let sharedWithUserId = null;
+  let splitMode = shared_split_mode || 'half_half';
+  let splitData = { self_percentage: 50, partner_percentage: 50 };
+  if (isShared) {
+    if (actor.partner_status !== 'connected' || !actor.partner_id) {
+      throw new Error('Shared expense requires a connected partner');
+    }
+    sharedWithUserId = parseInt(shared_with_userid || actor.partner_id, 10);
+    if (sharedWithUserId !== actor.partner_id) {
+      throw new Error('shared_with_userid must match connected partner');
+    }
+    if (!['half_half', 'manual'].includes(splitMode)) {
+      throw new Error('shared_split_mode must be "half_half" or "manual"');
+    }
+    if (splitMode === 'manual') {
+      const selfPercentage = Number(shared_split?.self_percentage);
+      const partnerPercentage = Number(shared_split?.partner_percentage);
+      if (
+        Number.isNaN(selfPercentage) ||
+        Number.isNaN(partnerPercentage) ||
+        selfPercentage < 0 ||
+        partnerPercentage < 0 ||
+        Math.round((selfPercentage + partnerPercentage) * 100) !== 10000
+      ) {
+        throw new Error('Manual split must have self_percentage + partner_percentage = 100');
+      }
+      splitData = {
+        self_percentage: selfPercentage,
+        partner_percentage: partnerPercentage,
+      };
+    }
   }
 
   // Validate date if provided
@@ -76,7 +149,13 @@ async function createCost(costData, userIdFromToken = null) {
     type: normalizedType,
     description: description.trim(),
     category: normalizedCategory,
-    userid,
+    userid: ownerUserId, // backward compatibility
+    owner_userid: ownerUserId,
+    paid_by_userid: paidByUserId,
+    is_shared: isShared,
+    shared_with_userid: sharedWithUserId,
+    shared_split_mode: splitMode,
+    shared_split: splitData,
     sum,
     created_at: costDate,
     currency: currency || 'ILS',
@@ -86,7 +165,7 @@ async function createCost(costData, userIdFromToken = null) {
   });
 
   await cost.save();
-  logger.info(`Cost created: ${cost._id} (${normalizedType}) for user: ${userid}`);
+  logger.info(`Cost created: ${cost._id} (${normalizedType}) for user: ${ownerUserId}`);
 
   return cost;
 }
@@ -97,6 +176,7 @@ async function createCost(costData, userIdFromToken = null) {
 async function getCosts(filters = {}) {
   const {
     userid,
+    userids,
     type,
     category,
     startDate,
@@ -110,9 +190,11 @@ async function getCosts(filters = {}) {
   // Build query
   const query = {};
 
-  // Required: userid
-  if (userid) {
-    query.userid = parseInt(userid);
+  // Required: userid or userids
+  if (Array.isArray(userids) && userids.length > 0) {
+    query.userid = { $in: userids.map((id) => parseInt(id, 10)) };
+  } else if (userid) {
+    query.userid = parseInt(userid, 10);
   } else {
     throw new Error('userid is required');
   }
@@ -169,7 +251,7 @@ async function getCosts(filters = {}) {
   }
 
   const costs = await Cost.find(query, null, options);
-  logger.info(`Retrieved ${costs.length} costs for user: ${userid}`);
+  logger.info(`Retrieved ${costs.length} costs`);
 
   return costs;
 }
