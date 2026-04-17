@@ -3,6 +3,7 @@
  */
 const DEFAULT_API_BASE_URL = 'http://localhost:4000';
 const DEFAULT_USER_ID = 1;
+const AUTH_STORAGE_KEY = 'cm_auth';
 
 const EXPENSE_CATEGORIES = new Set(['food', 'health', 'housing', 'sports', 'education']);
 const INCOME_CATEGORIES = new Set(['salary', 'freelance', 'investment', 'business', 'gift', 'other']);
@@ -12,9 +13,30 @@ function getApiBaseUrl() {
 }
 
 function getUserId() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (raw) {
+      const auth = JSON.parse(raw);
+      const userId = parseInt(auth?.user?.id, 10);
+      if (Number.isFinite(userId)) return userId;
+    }
+  } catch (error) {
+    // Ignore malformed auth data.
+  }
   const userIdRaw = process.env.REACT_APP_USER_ID;
   const parsed = parseInt(userIdRaw || '', 10);
   return Number.isFinite(parsed) ? parsed : DEFAULT_USER_ID;
+}
+
+function getAuthToken() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return '';
+    const auth = JSON.parse(raw);
+    return auth?.token || '';
+  } catch (error) {
+    return '';
+  }
 }
 
 function toBackendCurrency(currency) {
@@ -37,9 +59,11 @@ function toFrontendDate(dateValue) {
 }
 
 async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
     ...options,

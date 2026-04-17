@@ -20,7 +20,9 @@ export default function Layout({
   children, 
   currentView, 
   onViewChange,
-  notificationCount = 0 
+  notificationCount = 0,
+  auth = null,
+  onLogout = null,
 }) {
   const { i18n } = useTranslation();
   const theme = useTheme();
@@ -43,6 +45,8 @@ export default function Layout({
       <Header 
         onMenuClick={handleMenuClick} 
         notificationCount={notificationCount}
+        auth={auth}
+        onLogout={onLogout}
       />
       
       {/* Sidebar - will be positioned based on anchor prop */}

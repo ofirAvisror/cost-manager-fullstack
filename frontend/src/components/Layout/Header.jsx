@@ -40,8 +40,10 @@ import ES from 'country-flag-icons/react/3x2/ES';
  * @param {Object} props - Component props
  * @param {function} props.onMenuClick - Function to handle menu click
  * @param {number} [props.notificationCount=0] - Number of notifications
+ * @param {Object|null} [props.auth=null] - Auth payload
+ * @param {function|null} [props.onLogout=null] - Logout handler
  */
-export default function Header({ onMenuClick, notificationCount = 0 }) {
+export default function Header({ onMenuClick, notificationCount = 0, auth = null, onLogout = null }) {
   const { mode, toggleMode } = useTheme();
   const { t, i18n } = useTranslation();
   const { notifications, markAsRead, markAllAsRead, clearNotification } = useNotifications();
@@ -212,6 +214,20 @@ export default function Header({ onMenuClick, notificationCount = 0 }) {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {auth?.user?.email && (
+            <Chip
+              label={auth.user.email}
+              size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+              variant="outlined"
+            />
+          )}
+          {onLogout && (
+            <Button color="inherit" onClick={onLogout}>
+              Logout
+            </Button>
+          )}
+
           {/* PWA Install Button - Only show if app is not installed */}
           {!isInstalled && (
             <Tooltip title={t('header.installApp')}>

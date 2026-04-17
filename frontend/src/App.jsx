@@ -3,7 +3,20 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { CssBaseline, Alert, Fade } from '@mui/material';
+import {
+  CssBaseline,
+  Alert,
+  Fade,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  Typography,
+  Stack,
+  Checkbox,
+  FormControlLabel,
+} from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import './i18n/config';
@@ -23,10 +36,209 @@ import SavingsGoalsManager from './components/SavingsGoals/SavingsGoalsManager';
 import AdvancedFilters from './components/Filters/AdvancedFilters';
 import NotificationCenter from './components/Notifications/NotificationCenter';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+const AUTH_STORAGE_KEY = 'cm_auth';
+const CREDS_STORAGE_KEY = 'cm_saved_credentials';
+
+function AuthScreen({ onAuthenticated }) {
+  const [isRegister, setIsRegister] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [rememberCreds, setRememberCreds] = useState(true);
+  const [form, setForm] = useState({
+    id: '',
+    first_name: '',
+    last_name: '',
+    birthday: '',
+    email: '',
+    password: '',
+  });
+
+  useEffect(function initSavedCredentials() {
+    try {
+      const savedRaw = localStorage.getItem(CREDS_STORAGE_KEY);
+      if (!savedRaw) return;
+      const saved = JSON.parse(savedRaw);
+      setForm((prev) => ({
+        ...prev,
+        email: saved.email || '',
+        password: saved.password || '',
+      }));
+      setRememberCreds(true);
+    } catch (err) {
+      // Ignore malformed saved credentials.
+    }
+  }, []);
+
+  const updateField = function(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async function(event) {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!form.email || !form.password) {
+        throw new Error('Email and password are required');
+      }
+
+      let payload;
+      let endpoint;
+      if (isRegister) {
+        if (!form.id || !form.first_name || !form.last_name || !form.birthday) {
+          throw new Error('Fill all registration fields');
+        }
+        endpoint = '/api/register';
+        payload = {
+          id: parseInt(form.id, 10),
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          birthday: form.birthday,
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+        };
+      } else {
+        endpoint = '/api/login';
+        payload = {
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || 'Authentication failed');
+      }
+
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
+      if (rememberCreds) {
+        localStorage.setItem(
+          CREDS_STORAGE_KEY,
+          JSON.stringify({ email: form.email.trim().toLowerCase(), password: form.password })
+        );
+      } else {
+        localStorage.removeItem(CREDS_STORAGE_KEY);
+      }
+      onAuthenticated(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        bgcolor: 'background.default',
+      }}
+    >
+      <Card sx={{ width: '100%', maxWidth: 420, borderRadius: 3, boxShadow: 4 }}>
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
+            {isRegister ? 'Create account' : 'Sign in'}
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              {isRegister && (
+                <>
+                  <TextField
+                    label="User ID"
+                    type="number"
+                    value={form.id}
+                    onChange={(e) => updateField('id', e.target.value)}
+                    required
+                  />
+                  <TextField
+                    label="First name"
+                    value={form.first_name}
+                    onChange={(e) => updateField('first_name', e.target.value)}
+                    required
+                  />
+                  <TextField
+                    label="Last name"
+                    value={form.last_name}
+                    onChange={(e) => updateField('last_name', e.target.value)}
+                    required
+                  />
+                  <TextField
+                    label="Birthday"
+                    type="date"
+                    value={form.birthday}
+                    onChange={(e) => updateField('birthday', e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    required
+                  />
+                </>
+              )}
+
+              <TextField
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={(e) => updateField('email', e.target.value)}
+                required
+              />
+              <TextField
+                label="Password"
+                type="password"
+                value={form.password}
+                onChange={(e) => updateField('password', e.target.value)}
+                required
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rememberCreds}
+                    onChange={(e) => setRememberCreds(e.target.checked)}
+                  />
+                }
+                label="Remember email and password"
+              />
+              <Button type="submit" variant="contained" disabled={loading}>
+                {loading ? 'Please wait...' : isRegister ? 'Register' : 'Login'}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setIsRegister((prev) => !prev);
+                  setError('');
+                }}
+              >
+                {isRegister ? 'Have an account? Sign in' : 'Need an account? Register'}
+              </Button>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
+
 /**
  * Main App component (inner component with notifications)
  */
-function AppInner() {
+function AppInner({ auth, onLogout }) {
   const { t } = useTranslation();
   const [db, setDb] = useState(null);
   const [dbError, setDbError] = useState('');
@@ -112,6 +324,8 @@ function AppInner() {
         currentView={currentView} 
         onViewChange={setCurrentView}
         notificationCount={notifications.filter(n => !n.read).length}
+        auth={auth}
+        onLogout={onLogout}
       >
         {dbError && (
           <Fade in={!!dbError}>
@@ -138,10 +352,35 @@ function AppInner() {
  * Main App component
  */
 function App() {
+  const [auth, setAuth] = useState(null);
+
+  useEffect(function initAuthFromStorage() {
+    try {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.token) {
+        setAuth(parsed);
+      }
+    } catch (error) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }, []);
+
+  const handleLogout = function() {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setAuth(null);
+    window.location.reload();
+  };
+
   return (
     <ThemeProvider>
       <NotificationProvider>
-        <AppInner />
+        {auth ? (
+          <AppInner auth={auth} onLogout={handleLogout} />
+        ) : (
+          <AuthScreen onAuthenticated={setAuth} />
+        )}
       </NotificationProvider>
     </ThemeProvider>
   );
