@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <title>idb.js Test - Cost Manager</title>
+   <style>
+     body {
+       font-family: Arial, sans-serif;
+       max-width: 800px;
+       margin: 50px auto;
+       padding: 20px;
+       background-color: #f5f5f5;
+     }
+     h1 {
+       color: #333;
+     }
+     #output {
+       background-color: white;
+       border: 1px solid #ddd;
+       border-radius: 4px;
+       padding: 20px;
+       margin-top: 20px;
+       min-height: 200px;
+     }
+     .success {
+       color: green;
+       font-weight: bold;
+     }
+     .error {
+       color: red;
+       font-weight: bold;
+     }
+     .test-result {
+       margin: 10px 0;
+       padding: 10px;
+       border-left: 4px solid #4CAF50;
+       background-color: #f9f9f9;
+     }
+   </style>
+</head>
+<body>
+   <h1>idb.js Library Test</h1>
+   <p>This page tests the vanilla JavaScript version of the idb.js library.</p>
+   <p><strong>Note:</strong> If using file:// protocol, run a local server: <code>python3 -m http.server 8000</code> then open <code>http://localhost:8000/test-idb.html</code></p>
+   <div id="output">
+     <p>Running tests...</p>
+   </div>
+
+   <script src="idb.js"></script>
+   <script>
+     async function test() {
+       const output = document.getElementById('output');
+       output.innerHTML = '<h3>Test Results:</h3>';
+
+       try {
+         // Test 1: Open database
+         output.innerHTML += '<div class="test-result">Test 1: Opening database...</div>';
+         const db = await idb.openCostsDB("costsdb", 1);
+         
+         if (db) {
+           output.innerHTML += '<div class="test-result"><span class="success">✓ Database opened successfully</span></div>';
+         }
+
+         // Test 2: Add first cost item
+         output.innerHTML += '<div class="test-result">Test 2: Adding first cost item...</div>';
+         const result1 = await db.addCost({
+           sum: 200,
+           currency: "USD",
+           category: "FOOD",
+           description: "pizza"
+         });
+
+         if (result1) {
+           output.innerHTML += '<div class="test-result"><span class="success">✓ First cost item added successfully</span><br>';
+           output.innerHTML += 'Added: ' + JSON.stringify(result1, null, 2) + '</div>';
+         }
+
+         // Test 3: Add second cost item
+         output.innerHTML += '<div class="test-result">Test 3: Adding second cost item...</div>';
+         const result2 = await db.addCost({
+           sum: 400,
+           currency: "USD",
+           category: "CAR",
+           description: "fuel"
+         });
+
+         if (result2) {
+           output.innerHTML += '<div class="test-result"><span class="success">✓ Second cost item added successfully</span><br>';
+           output.innerHTML += 'Added: ' + JSON.stringify(result2, null, 2) + '</div>';
+         }
+
+         // Test 4: Get report for current month
+         const now = new Date();
+         const currentYear = now.getFullYear();
+         const currentMonth = now.getMonth() + 1;
+         
+         output.innerHTML += '<div class="test-result">Test 4: Getting report for ' + currentMonth + '/' + currentYear + '...</div>';
+         const report = await db.getReport(currentYear, currentMonth, "USD");
+         
+         if (report) {
+           output.innerHTML += '<div class="test-result"><span class="success">✓ Report retrieved successfully</span><br>';
+           output.innerHTML += '<pre>' + JSON.stringify(report, null, 2) + '</pre></div>';
+         }
+
+         // All tests passed
+         output.innerHTML += '<div class="test-result" style="border-left-color: #2196F3; margin-top: 20px;">';
+         output.innerHTML += '<h3 class="success">All Tests Passed! ✓</h3>';
+         output.innerHTML += '</div>';
+
+       } catch (error) {
+         output.innerHTML += '<div class="test-result" style="border-left-color: #f44336;">';
+         output.innerHTML += '<span class="error">✗ Test failed: ' + error.message + '</span><br>';
+         output.innerHTML += '<pre>' + error.stack + '</pre>';
+         output.innerHTML += '</div>';
+       }
+     }
+
+     // Run tests when page loads
+     test();
+   </script>
+</body>
+</html>
