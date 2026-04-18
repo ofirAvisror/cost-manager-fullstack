@@ -5,9 +5,6 @@ const DEFAULT_API_BASE_URL = 'http://localhost:4000';
 const DEFAULT_USER_ID = 1;
 const AUTH_STORAGE_KEY = 'cm_auth';
 
-const EXPENSE_CATEGORIES = new Set(['food', 'health', 'housing', 'sports', 'education']);
-const INCOME_CATEGORIES = new Set(['salary', 'freelance', 'investment', 'business', 'gift', 'other']);
-
 function getApiBaseUrl() {
   return process.env.REACT_APP_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
@@ -88,36 +85,46 @@ async function apiRequest(path, options = {}) {
 
 function serializeCost(cost) {
   const originalType = cost.type || 'expense';
-  const category = (cost.category || '').toLowerCase();
+  const category = (cost.category || '').trim().toLowerCase();
 
   let backendType = 'expense';
   if (originalType === 'income' || originalType === 'savings_deposit') {
     backendType = 'income';
   }
 
-  let backendCategory = category;
   const customTags = [];
-  if (
-    (backendType === 'expense' && !EXPENSE_CATEGORIES.has(backendCategory)) ||
-    (backendType === 'income' && !INCOME_CATEGORIES.has(backendCategory))
-  ) {
-    customTags.push(`cm_category:${category}`);
-    backendCategory = 'other';
-  }
-
   if (originalType === 'savings_deposit' || originalType === 'savings_withdrawal') {
     customTags.push(`cm_type:${originalType}`);
   }
 
-  return {
+  const payload = {
     type: backendType,
     description: cost.description,
-    category: backendCategory,
+    category,
     userid: getUserId(),
     sum: cost.sum,
     currency: toBackendCurrency(cost.currency || 'ILS'),
     tags: customTags,
   };
+
+  if (backendType === 'expense' && cost.isRecurringExpense) {
+    payload.recurring = {
+      enabled: true,
+      frequency: (cost.recurringFrequency || 'monthly').toLowerCase(),
+    };
+    if (cost.recurringNextDate) {
+      payload.recurring.next_date =
+        typeof cost.recurringNextDate === 'string'
+          ? cost.recurringNextDate
+          : new Date(
+              cost.recurringNextDate.year,
+              cost.recurringNextDate.month - 1,
+              cost.recurringNextDate.day
+            ).toISOString();
+    }
+  }
+
+  return payload;
 }
 
 function deserializeCost(cost) {
@@ -142,6 +149,14 @@ function deserializeCost(cost) {
     sharedWithUserId: cost.shared_with_userid || null,
     sharedSplitMode: cost.shared_split_mode || 'half_half',
     sharedSplit: cost.shared_split || { self_percentage: 50, partner_percentage: 50 },
+    scheduleOnly: !!cost.schedule_only,
+    recurring:
+      cost.recurring && cost.recurring.enabled
+        ? {
+            frequency: cost.recurring.frequency,
+            nextDate: cost.recurring.next_date,
+          }
+        : null,
   };
 }
 
@@ -168,25 +183,123 @@ export async function openCostsDB() {
       return (items || []).map(deserializeCost);
     },
 
+    async processRecurringDue() {
+      await apiRequest('/api/recurring/process', { method: 'POST' });
+    },
+
+    async getRecurringSchedules() {
+      const params = new URLSearchParams({
+        userid: String(getUserId()),
+        schedulesOnly: 'true',
+        includePartner: 'true',
+      });
+      const items = await apiRequest(`/api/costs?${params.toString()}`);
+      return (items || []).map(deserializeCost);
+    },
+
+    async deleteRecurringSchedule(id) {
+      await apiRequest(`/api/costs/schedules/${id}`, { method: 'DELETE' });
+    },
+
     async getReport(year, month, currency) {
       const report = await apiRequest(
         `/api/report?id=${getUserId()}&year=${year}&month=${month}`
       );
 
-      const costs = Array.isArray(report.costs) ? report.costs.map((cost) => ({
-        ...cost,
-        currency,
-      })) : [];
-      const totalExpenses = report.total || report.totals?.expenses || 0;
-      const totalIncomes = costs
-        .filter((item) => item.type === 'income')
-        .reduce((sum, item) => sum + item.sum, 0);
+      function flattenCategoryBuckets(buckets, type) {
+        const rows = [];
+        if (!Array.isArray(buckets)) return rows;
+        buckets.forEach((bucket) => {
+          if (!bucket || typeof bucket !== 'object') return;
+          Object.keys(bucket).forEach((category) => {
+            const items = bucket[category];
+            if (!Array.isArray(items)) return;
+            items.forEach((item) => {
+              rows.push({
+                category,
+                sum: item.sum,
+                description: item.description,
+                day: item.day,
+                type,
+                date: { year, month, day: item.day },
+                currency,
+              });
+            });
+          });
+        });
+        return rows;
+      }
+
+      let expenseRows = flattenCategoryBuckets(report.expenses || report.costs, 'expense');
+      let incomeRows = flattenCategoryBuckets(report.income, 'income');
+
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+
+      const totalExpenses = Number(
+        report.summary?.total_expenses ??
+          report.totals?.expenses ??
+          report.total ??
+          0
+      );
+      let totalIncomes = Number(
+        report.summary?.total_income ??
+          report.totals?.incomes ??
+          incomeRows.reduce((sum, item) => sum + Number(item.sum || 0), 0)
+      );
+
+      // Legacy cached reports: summary correct but category buckets omitted custom categories.
+      if (totalExpenses > 0 && expenseRows.length === 0) {
+        const fromRange = await dbObject.getCostsByDateRange(
+          { year, month, day: 1 },
+          { year, month, day: lastDayOfMonth }
+        );
+        expenseRows = fromRange
+          .filter((item) => (item.type || 'expense') === 'expense')
+          .map((item) => ({
+            category: item.category,
+            sum: item.sum,
+            description: item.description,
+            day: item.date?.day,
+            type: 'expense',
+            date: item.date,
+            currency: item.currency || currency,
+          }));
+      }
+      if (totalIncomes > 0 && incomeRows.length === 0) {
+        const fromRange = await dbObject.getCostsByDateRange(
+          { year, month, day: 1 },
+          { year, month, day: lastDayOfMonth }
+        );
+        incomeRows = fromRange
+          .filter((item) => item.type === 'income')
+          .map((item) => ({
+            category: item.category,
+            sum: item.sum,
+            description: item.description,
+            day: item.date?.day,
+            type: 'income',
+            date: item.date,
+            currency: item.currency || currency,
+          }));
+      }
+
+      const costs = expenseRows.concat(incomeRows);
+
+      if (
+        (!report.summary?.total_income && !report.totals?.incomes) &&
+        incomeRows.length > 0
+      ) {
+        totalIncomes = incomeRows.reduce((sum, item) => sum + Number(item.sum || 0), 0);
+      }
+
+      const balance =
+        report.summary?.balance ?? (totalIncomes - totalExpenses);
 
       return {
         ...report,
         costs,
-        expenses: costs.filter((item) => item.type !== 'income'),
-        incomes: costs.filter((item) => item.type === 'income'),
+        expenses: expenseRows,
+        incomes: incomeRows,
         savings: {
           deposits: [],
           withdrawals: [],
@@ -196,7 +309,7 @@ export async function openCostsDB() {
           expenses: totalExpenses,
           incomes: totalIncomes,
           savings: 0,
-          balance: totalIncomes - totalExpenses,
+          balance,
           currency,
         },
         total: {

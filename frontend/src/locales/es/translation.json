@@ -11,7 +11,8 @@
     "filters": "Filtros",
     "notifications": "Notificaciones",
     "settings": "Configuración",
-    "savingsGoals": "Objetivos de Ahorro"
+    "savingsGoals": "Objetivos de Ahorro",
+    "recurring": "Recurrentes"
   },
   "common": {
     "costManager": "Gestor de Gastos",
@@ -321,6 +322,24 @@
     "ils": "ILS - Shekel Israelí",
     "gbp": "GBP - Libra Esterlina",
     "euro": "EURO - Euro"
+  },
+  "recurring": {
+    "title": "Gastos recurrentes",
+    "subtitle": "Estas plantillas añaden automáticamente el mismo gasto en cada fecha (por ejemplo cada mes).",
+    "enable": "Repetir este gasto según un calendario",
+    "frequencyPrompt": "Frecuencia",
+    "nextDue": "Próximo vencimiento",
+    "stop": "Detener",
+    "stopped": "Recurrencia eliminada",
+    "stopFailed": "No se pudo eliminar la recurrencia",
+    "loadFailed": "No se pudieron cargar las recurrencias",
+    "empty": "Aún no hay gastos recurrentes. Actívalo al añadir una transacción.",
+    "frequency": {
+      "daily": "Diaria",
+      "weekly": "Semanal",
+      "monthly": "Mensual",
+      "yearly": "Anual"
+    }
   },
   "savingsGoals": {
     "title": "Objetivos de Ahorro",

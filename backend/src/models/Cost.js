@@ -21,13 +21,9 @@ const costSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: [
-      // Expense categories
-      'food', 'health', 'housing', 'sports', 'education',
-      // Income categories
-      'salary', 'freelance', 'investment', 'business', 'gift', 'other'
-    ],
-    lowercase: true
+    trim: true,
+    lowercase: true,
+    maxlength: [64, 'Category is too long']
   },
   userid: {
     type: Number,
@@ -90,6 +86,11 @@ const costSchema = new mongoose.Schema({
     type: [String],
     default: [],
     description: 'Optional tags for categorization and filtering'
+  },
+  schedule_only: {
+    type: Boolean,
+    default: false,
+    description: 'When true, this row is only a recurring template (not a real transaction)'
   },
   recurring: {
     enabled: {

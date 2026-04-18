@@ -71,11 +71,11 @@ describe('Cost Endpoints', () => {
       expect(response.body).toHaveProperty('message');
     });
 
-    test('should return error when category is invalid', async () => {
+    test('should return error when category is too long', async () => {
       const costData = {
         type: 'expense',
         description: 'Test',
-        category: 'invalid_category',
+        category: 'x'.repeat(65),
         userid: 1,
         sum: 100
       };
@@ -86,6 +86,23 @@ describe('Cost Endpoints', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('id', 'VALIDATION_ERROR');
+    });
+
+    test('should accept user-defined expense category', async () => {
+      const costData = {
+        type: 'expense',
+        description: 'Test custom cat',
+        category: 'my_custom_category',
+        userid: 1,
+        sum: 100
+      };
+
+      const response = await request(app)
+        .post('/api/add')
+        .send(costData)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('category', 'my_custom_category');
     });
 
     test('should return error when user does not exist', async () => {

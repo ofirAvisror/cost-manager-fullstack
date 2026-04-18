@@ -5,6 +5,7 @@ const User = require('../src/models/User');
 const Cost = require('../src/models/Cost');
 const Report = require('../src/models/Report');
 const app = require('../app_report');
+const { cachedReportDataIsStale, REPORT_DATA_VERSION } = require('../src/services/report.service');
 
 // Test database connection
 beforeAll(async () => {
@@ -31,6 +32,29 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
+describe('cachedReportDataIsStale', () => {
+  test('detects legacy cache with expense total but no line items', () => {
+    expect(
+      cachedReportDataIsStale({
+        summary: { total_expenses: 1800, total_income: 0, balance: -1800 },
+        expenses: [{ food: [] }, { education: [] }],
+        income: [],
+      })
+    ).toBe(true);
+  });
+
+  test('accepts current schema with matching lines', () => {
+    expect(
+      cachedReportDataIsStale({
+        schemaVersion: REPORT_DATA_VERSION,
+        summary: { total_expenses: 50, total_income: 0, balance: -50 },
+        expenses: [{ food: [{ sum: 50, description: 'x', day: 1 }] }],
+        income: [],
+      })
+    ).toBe(false);
+  });
+});
+
 describe('Report Endpoints', () => {
   beforeEach(async () => {
     // Create test user
@@ -54,6 +78,8 @@ describe('Report Endpoints', () => {
         description: 'Lunch',
         category: 'food',
         userid: 1,
+        owner_userid: 1,
+        paid_by_userid: 1,
         sum: 50,
         created_at: new Date(year, month - 1, 15)
       });
@@ -63,6 +89,8 @@ describe('Report Endpoints', () => {
         description: 'Book',
         category: 'education',
         userid: 1,
+        owner_userid: 1,
+        paid_by_userid: 1,
         sum: 100,
         created_at: new Date(year, month - 1, 20)
       });
@@ -78,12 +106,13 @@ describe('Report Endpoints', () => {
       expect(response.body).toHaveProperty('expenses');
       expect(response.body).toHaveProperty('income');
       expect(response.body).toHaveProperty('summary');
+      expect(response.body).toHaveProperty('schemaVersion', REPORT_DATA_VERSION);
       expect(Array.isArray(response.body.costs)).toBe(true);
       expect(Array.isArray(response.body.expenses)).toBe(true);
       expect(Array.isArray(response.body.income)).toBe(true);
     });
 
-    test('should return all categories even when empty', async () => {
+    test('should return no category buckets when there are no transactions', async () => {
       const now = new Date();
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
@@ -92,15 +121,11 @@ describe('Report Endpoints', () => {
         .get(`/api/report?id=1&year=${year}&month=${month}`)
         .expect(200);
 
-      expect(response.body.costs.length).toBe(5); // All 5 expense categories
-      expect(response.body.expenses.length).toBe(5);
-      expect(response.body.income.length).toBe(6); // All 6 income categories
-      const expenseCategories = ['food', 'education', 'health', 'housing', 'sports'];
-      expenseCategories.forEach(category => {
-        const categoryObj = response.body.costs.find(c => c[category] !== undefined);
-        expect(categoryObj).toBeDefined();
-        expect(Array.isArray(categoryObj[category])).toBe(true);
-      });
+      expect(response.body.costs.length).toBe(0);
+      expect(response.body.expenses.length).toBe(0);
+      expect(response.body.income.length).toBe(0);
+      expect(response.body.summary.total_expenses).toBe(0);
+      expect(response.body.summary.total_income).toBe(0);
     });
 
     test('should return error when required parameters are missing', async () => {
@@ -145,6 +170,8 @@ describe('Report Endpoints', () => {
         description: 'Lunch',
         category: 'food',
         userid: 1,
+        owner_userid: 1,
+        paid_by_userid: 1,
         sum: 50,
         created_at: new Date(year, month - 1, 17)
       });
@@ -184,6 +211,8 @@ describe('Report Endpoints', () => {
         description: 'Past expense',
         category: 'food',
         userid: 1,
+        owner_userid: 1,
+        paid_by_userid: 1,
         sum: 50,
         created_at: new Date(pastYear, pastMonthIndex, 15)
       });

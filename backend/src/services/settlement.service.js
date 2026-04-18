@@ -23,6 +23,7 @@ async function getMonthlySettlement(currentUserId, year, month) {
 
   const costs = await Cost.find({
     is_shared: true,
+    schedule_only: { $ne: true },
     created_at: { $gte: start, $lte: end },
     $or: [
       { paid_by_userid: me.id, shared_with_userid: partner.id },

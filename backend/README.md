@@ -53,6 +53,8 @@ Create a `.env` file in the root directory with the following variables:
 
 ```
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/cost_manager
+# Required for `npm test` — must be a different DB name than MONGO_URI (tests call deleteMany on users/costs)
+MONGO_URI_TEST=mongodb+srv://username:password@cluster.mongodb.net/cost_manager_test
 PORT_USERS=3000
 PORT_COSTS=3001
 PORT_REPORT=3002
@@ -457,6 +459,12 @@ All HTTP requests and endpoint accesses are logged using **Pino** logger and sav
 ## Testing
 
 The project includes comprehensive unit tests using Jest and Supertest.
+
+### Test database (important)
+
+Jest tests **delete** `users`, `costs`, and related collections in `afterEach`. They connect to `MONGO_URI_TEST` when it is set; **if it is missing, they used to fall back to `MONGO_URI` and could erase your real dev users** (login then fails with invalid credentials / empty DB).
+
+Set **`MONGO_URI_TEST`** in `backend/.env` to the **same cluster but a different database name** (e.g. `cost_manager_test`). The test runner refuses to start without it.
 
 ### Run Tests
 

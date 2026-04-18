@@ -75,6 +75,8 @@ export default function AddCostForm({ db }) {
   const [isShared, setIsShared] = useState(false);
   const [splitMode, setSplitMode] = useState('half_half');
   const [selfPercentage, setSelfPercentage] = useState(50);
+  const [isRecurringExpense, setIsRecurringExpense] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState('monthly');
 
   const hasConnectedPartner = partnerStatus?.status === 'connected' && partnerStatus?.partner;
   const myUserId = partnerStatus?.user_id || null;
@@ -213,7 +215,9 @@ export default function AddCostForm({ db }) {
         isShared: isShared,
         sharedWithUserId: isShared ? partnerUserId : null,
         sharedSplitMode: splitMode,
-        sharedSplit: splitPayload
+        sharedSplit: splitPayload,
+        isRecurringExpense: result.data.transactionType === 'expense' && isRecurringExpense,
+        recurringFrequency: result.data.transactionType === 'expense' ? recurringFrequency : undefined,
       });
 
       // Reset form and show success message
@@ -228,6 +232,8 @@ export default function AddCostForm({ db }) {
       setIsShared(false);
       setSplitMode('half_half');
       setSelfPercentage(50);
+      setIsRecurringExpense(false);
+      setRecurringFrequency('monthly');
       
       // Reload categories to include the new one
       try {
@@ -281,7 +287,11 @@ export default function AddCostForm({ db }) {
                 value={transactionType}
                 label={t('forms.transactionType')}
                 onChange={(e) => {
-                  setTransactionType(e.target.value);
+                  const v = e.target.value;
+                  setTransactionType(v);
+                  if (v !== 'expense') {
+                    setIsRecurringExpense(false);
+                  }
                   if (errors.transactionType) {
                     setErrors({ ...errors, transactionType: '' });
                   }
@@ -359,6 +369,36 @@ export default function AddCostForm({ db }) {
             }
             label={t('forms.sharedPayment')}
           />
+
+          {transactionType === 'expense' && (
+            <>
+              <FormControlLabel
+                sx={{ mt: 2 }}
+                control={
+                  <Switch
+                    checked={isRecurringExpense}
+                    onChange={(e) => setIsRecurringExpense(e.target.checked)}
+                  />
+                }
+                label={t('recurring.enable')}
+              />
+              {isRecurringExpense && (
+                <FormControl fullWidth margin="normal" required>
+                  <InputLabel>{t('recurring.frequencyPrompt')}</InputLabel>
+                  <Select
+                    value={recurringFrequency}
+                    label={t('recurring.frequencyPrompt')}
+                    onChange={(e) => setRecurringFrequency(e.target.value)}
+                  >
+                    <MenuItem value="daily">{t('recurring.frequency.daily')}</MenuItem>
+                    <MenuItem value="weekly">{t('recurring.frequency.weekly')}</MenuItem>
+                    <MenuItem value="monthly">{t('recurring.frequency.monthly')}</MenuItem>
+                    <MenuItem value="yearly">{t('recurring.frequency.yearly')}</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+            </>
+          )}
 
           {isShared && (
             <>

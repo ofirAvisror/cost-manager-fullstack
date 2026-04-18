@@ -1,6 +1,7 @@
 const Cost = require('../models/Cost');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
+const { computeNextOccurrence, processDueRecurringSchedules } = require('./recurring.service');
 
 const EXPENSE_CATEGORIES = ['food', 'health', 'housing', 'sports', 'education'];
 const INCOME_CATEGORIES = ['salary', 'freelance', 'investment', 'business', 'gift', 'other'];
@@ -36,7 +37,7 @@ async function createCost(costData, userIdFromToken = null) {
   const isShared = is_shared === true || is_shared === 'true';
 
   const normalizedType = type.toLowerCase();
-  const normalizedCategory = category.toLowerCase();
+  const normalizedCategory = String(category).trim().toLowerCase();
 
   // Validate user exists
   const [actor, owner, payer] = await Promise.all([
@@ -112,25 +113,26 @@ async function createCost(costData, userIdFromToken = null) {
     }
   }
 
-  // Validate recurring if provided
-  let recurringData = { enabled: false };
+  // Recurring: only for expenses; stored on a separate schedule row (see below)
+  let wantsRecurringSchedule = false;
+  let scheduleFrequency = 'monthly';
+  let scheduleNextDate = null;
   if (recurring) {
     if (typeof recurring === 'object' && recurring.enabled) {
+      if (normalizedType !== 'expense') {
+        throw new Error('Recurring schedules are only supported for expenses');
+      }
       if (!recurring.frequency || !['daily', 'weekly', 'monthly', 'yearly'].includes(recurring.frequency.toLowerCase())) {
         throw new Error('recurring.frequency is required and must be one of: daily, weekly, monthly, yearly');
       }
-      if (!recurring.next_date) {
-        throw new Error('recurring.next_date is required when recurring is enabled');
+      wantsRecurringSchedule = true;
+      scheduleFrequency = recurring.frequency.toLowerCase();
+      if (recurring.next_date) {
+        scheduleNextDate = new Date(recurring.next_date);
+        if (isNaN(scheduleNextDate.getTime())) {
+          throw new Error('recurring.next_date must be a valid date');
+        }
       }
-      const nextDate = new Date(recurring.next_date);
-      if (isNaN(nextDate.getTime())) {
-        throw new Error('recurring.next_date must be a valid date');
-      }
-      recurringData = {
-        enabled: true,
-        frequency: recurring.frequency.toLowerCase(),
-        next_date: nextDate
-      };
     }
   }
 
@@ -161,11 +163,50 @@ async function createCost(costData, userIdFromToken = null) {
     currency: currency || 'ILS',
     payment_method: normalizedType === 'expense' ? payment_method : undefined,
     tags: tagsArray,
-    recurring: recurringData
+    recurring: { enabled: false },
+    schedule_only: false
   });
 
   await cost.save();
   logger.info(`Cost created: ${cost._id} (${normalizedType}) for user: ${ownerUserId}`);
+
+  if (wantsRecurringSchedule) {
+    const firstNext =
+      scheduleNextDate && !isNaN(scheduleNextDate.getTime())
+        ? scheduleNextDate
+        : computeNextOccurrence(costDate, scheduleFrequency);
+    const scheduleRow = new Cost({
+      type: normalizedType,
+      description: description.trim(),
+      category: normalizedCategory,
+      userid: ownerUserId,
+      owner_userid: ownerUserId,
+      paid_by_userid: paidByUserId,
+      is_shared: isShared,
+      shared_with_userid: sharedWithUserId,
+      shared_split_mode: splitMode,
+      shared_split: splitData,
+      sum,
+      created_at: costDate,
+      currency: currency || 'ILS',
+      payment_method: normalizedType === 'expense' ? payment_method : undefined,
+      tags: tagsArray,
+      schedule_only: true,
+      recurring: {
+        enabled: true,
+        frequency: scheduleFrequency,
+        next_date: firstNext,
+      },
+    });
+    await scheduleRow.save();
+    logger.info(`Recurring schedule created: ${scheduleRow._id} for user: ${ownerUserId}`);
+  }
+
+  try {
+    await processDueRecurringSchedules();
+  } catch (err) {
+    logger.error({ err }, 'processDueRecurringSchedules after create failed');
+  }
 
   return cost;
 }
@@ -184,7 +225,9 @@ async function getCosts(filters = {}) {
     tags,
     recurring,
     limit,
-    skip
+    skip,
+    schedulesOnly,
+    includeSchedules
   } = filters;
 
   // Build query
@@ -210,7 +253,7 @@ async function getCosts(filters = {}) {
 
   // Optional: category filter
   if (category) {
-    query.category = category.toLowerCase();
+    query.category = String(category).trim().toLowerCase();
   }
 
   // Optional: date range filter
@@ -236,6 +279,12 @@ async function getCosts(filters = {}) {
     } else if (recurring === 'false' || recurring === false) {
       query['recurring.enabled'] = false;
     }
+  }
+
+  if (schedulesOnly === true || schedulesOnly === 'true') {
+    query.schedule_only = true;
+  } else if (!(includeSchedules === true || includeSchedules === 'true')) {
+    query.schedule_only = { $ne: true };
   }
 
   // Build query options
@@ -273,10 +322,29 @@ async function getCostById(id) {
   return cost;
 }
 
+/**
+ * Delete a recurring schedule template (schedule_only). Regular costs cannot be removed here.
+ */
+async function deleteScheduleCost(id, actorUserId) {
+  if (!id) throw new Error('Cost ID is required');
+  const cost = await Cost.findById(id);
+  if (!cost) throw new Error('Cost not found');
+  if (!cost.schedule_only) {
+    throw new Error('Only recurring schedule templates can be deleted with this action');
+  }
+  const actorId = parseInt(actorUserId, 10);
+  if (cost.owner_userid !== actorId) {
+    throw new Error('Not allowed to delete this schedule');
+  }
+  await Cost.findByIdAndDelete(id);
+  logger.info(`Recurring schedule deleted: ${id} by user ${actorId}`);
+}
+
 module.exports = {
   createCost,
   getCosts,
   getCostById,
+  deleteScheduleCost,
   EXPENSE_CATEGORIES,
   INCOME_CATEGORIES
 };

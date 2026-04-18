@@ -308,6 +308,7 @@ app.get('/api/budgets/status', async (req, res) => {
     const expenses = await Cost.find({
       userid: userIdNum,
       type: 'expense',
+      schedule_only: { $ne: true },
       created_at: { $gte: startDate, $lte: endDate }
     });
 

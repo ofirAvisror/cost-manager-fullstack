@@ -36,6 +36,7 @@ import SavingsGoalsManager from './components/SavingsGoals/SavingsGoalsManager';
 import AdvancedFilters from './components/Filters/AdvancedFilters';
 import NotificationCenter from './components/Notifications/NotificationCenter';
 import PartnerManager from './components/Partner/PartnerManager';
+import RecurringSchedulesManager from './components/Recurring/RecurringSchedulesManager';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
 const AUTH_STORAGE_KEY = 'cm_auth';
@@ -246,6 +247,13 @@ function AppInner({ auth, onLogout }) {
     async function initDB() {
       try {
         const database = await openCostsDB();
+        if (database && typeof database.processRecurringDue === 'function') {
+          try {
+            await database.processRecurringDue();
+          } catch (recErr) {
+            console.warn('Recurring process on startup:', recErr);
+          }
+        }
         setDb(database);
         setDbError('');
       } catch (error) {
@@ -326,6 +334,8 @@ function AppInner({ auth, onLogout }) {
         return <Settings />;
       case 'partner':
         return <PartnerManager db={db} />;
+      case 'recurring':
+        return <RecurringSchedulesManager db={db} />;
       default:
         return <Dashboard db={db} onViewChange={setCurrentView} />;
     }

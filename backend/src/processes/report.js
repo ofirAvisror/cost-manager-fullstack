@@ -40,6 +40,7 @@ async function generateReport(userid, year, month) {
 
     const costs = await Cost.find({
       userid,
+      schedule_only: { $ne: true },
       created_at: { $gte: startDate, $lte: endDate }
     });
 

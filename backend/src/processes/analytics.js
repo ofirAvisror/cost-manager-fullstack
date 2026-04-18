@@ -44,7 +44,7 @@ app.get('/api/analytics/summary', async (req, res) => {
       });
     }
 
-    const costs = await Cost.find({ userid: parseInt(userid) });
+    const costs = await Cost.find({ userid: parseInt(userid), schedule_only: { $ne: true } });
 
     const totalIncome = costs
       .filter(t => t.type === 'income')
@@ -104,6 +104,7 @@ app.get('/api/analytics/trends', async (req, res) => {
 
     const costs = await Cost.find({
       userid: parseInt(userid),
+      schedule_only: { $ne: true },
       created_at: { $gte: startDate, $lte: endDate }
     });
 
@@ -162,7 +163,7 @@ app.get('/api/analytics/categories', async (req, res) => {
       });
     }
 
-    const query = { userid: parseInt(userid) };
+    const query = { userid: parseInt(userid), schedule_only: { $ne: true } };
     if (type) {
       query.type = type.toLowerCase();
     }
@@ -339,6 +340,7 @@ app.get('/api/analytics/yearly', async (req, res) => {
 
     const costs = await Cost.find({
       userid: parseInt(userid),
+      schedule_only: { $ne: true },
       created_at: { $gte: startDate, $lte: endDate }
     });
 

@@ -1,6 +1,52 @@
 const Cost = require('../models/Cost');
 const Report = require('../models/Report');
+const User = require('../models/User');
 const { logger } = require('../config/logger');
+const { householdOwnerIdsFromUser } = require('../utils/household');
+
+/** Bump when report shape / bucketing logic changes (invalidates Mongo cache). */
+const REPORT_DATA_VERSION = 2;
+
+function totalLineItemsInBuckets(buckets) {
+  if (!Array.isArray(buckets)) return 0;
+  let n = 0;
+  for (const bucket of buckets) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const key of Object.keys(bucket)) {
+      const arr = bucket[key];
+      if (Array.isArray(arr)) n += arr.length;
+    }
+  }
+  return n;
+}
+
+function cachedReportDataIsStale(data) {
+  if (!data || typeof data !== 'object') return true;
+  if (data.schemaVersion !== REPORT_DATA_VERSION) return true;
+  const te = Number(data.summary?.total_expenses) || 0;
+  const ti = Number(data.summary?.total_income) || 0;
+  const expN = totalLineItemsInBuckets(data.expenses || data.costs);
+  const incN = totalLineItemsInBuckets(data.income);
+  if (te > 0 && expN === 0) return true;
+  if (ti > 0 && incN === 0) return true;
+  return false;
+}
+
+function bucketCostsByCategory(rows) {
+  const groups = {};
+  rows.forEach((t) => {
+    const cat = (t.category && String(t.category).trim()) || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push({
+      sum: t.sum,
+      description: t.description,
+      day: new Date(t.created_at).getDate(),
+    });
+  });
+  return Object.keys(groups)
+    .sort()
+    .map((category) => ({ [category]: groups[category] }));
+}
 
 /**
  * Check if a date is in the current month
@@ -19,54 +65,22 @@ async function generateReport(userid, year, month) {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
 
+  const user = await User.findOne({ id: parseInt(userid, 10) });
+  const fromPartner = householdOwnerIdsFromUser(user);
+  const ownerIds = fromPartner.length ? fromPartner : [parseInt(userid, 10)];
+
   const costs = await Cost.find({
-    userid,
-    created_at: { $gte: startDate, $lte: endDate }
+    userid: { $in: ownerIds },
+    created_at: { $gte: startDate, $lte: endDate },
+    schedule_only: { $ne: true },
   });
 
   // Separate income and expenses
   const expenses = costs.filter(t => t.type === 'expense');
   const incomes = costs.filter(t => t.type === 'income');
 
-  // Expense categories
-  const expenseCategories = ['food', 'education', 'health', 'housing', 'sports'];
-  const expensesArray = [];
-
-  expenseCategories.forEach(category => {
-    const categoryExpenses = expenses.filter(e => e.category === category);
-    const categoryData = categoryExpenses.map(e => {
-      const day = new Date(e.created_at).getDate();
-      return {
-        sum: e.sum,
-        description: e.description,
-        day: day
-      };
-    });
-    
-    const categoryObject = {};
-    categoryObject[category] = categoryData;
-    expensesArray.push(categoryObject);
-  });
-
-  // Income categories
-  const incomeCategories = ['salary', 'freelance', 'investment', 'business', 'gift', 'other'];
-  const incomeArray = [];
-
-  incomeCategories.forEach(category => {
-    const categoryIncomes = incomes.filter(i => i.category === category);
-    const categoryData = categoryIncomes.map(i => {
-      const day = new Date(i.created_at).getDate();
-      return {
-        sum: i.sum,
-        description: i.description,
-        day: day
-      };
-    });
-    
-    const categoryObject = {};
-    categoryObject[category] = categoryData;
-    incomeArray.push(categoryObject);
-  });
+  const expensesArray = bucketCostsByCategory(expenses);
+  const incomeArray = bucketCostsByCategory(incomes);
 
   // Calculate totals
   const totalExpenses = expenses.reduce((sum, e) => sum + e.sum, 0);
@@ -77,6 +91,7 @@ async function generateReport(userid, year, month) {
     userid: userid,
     year: year,
     month: month,
+    schemaVersion: REPORT_DATA_VERSION,
     expenses: expensesArray, // Keep 'expenses' for backward compatibility
     costs: expensesArray, // Keep 'costs' for backward compatibility
     income: incomeArray,
@@ -96,19 +111,23 @@ async function getReport(userid, year, month) {
   const current = isCurrentMonth(year, month);
 
   if (!current) {
-    // Past or future month - check cache first
     let cachedReport = await Report.findOne({
       userid,
       year,
       month
     });
 
+    if (cachedReport && cachedReportDataIsStale(cachedReport.data)) {
+      await Report.deleteOne({ _id: cachedReport._id });
+      logger.info(`Invalidated stale cached report for user ${userid}, ${year}-${month}`);
+      cachedReport = null;
+    }
+
     if (cachedReport) {
       logger.info(`Returning cached report for user ${userid}, ${year}-${month}`);
       return cachedReport.data;
     }
 
-    // Not in cache - generate, save, and return
     logger.info(`Generating and caching report for user ${userid}, ${year}-${month}`);
     const reportData = await generateReport(userid, year, month);
 
@@ -132,7 +151,9 @@ async function getReport(userid, year, month) {
 module.exports = {
   getReport,
   generateReport,
-  isCurrentMonth
+  isCurrentMonth,
+  REPORT_DATA_VERSION,
+  cachedReportDataIsStale,
 };
 
 

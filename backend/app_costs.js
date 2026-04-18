@@ -14,8 +14,13 @@ app.use(express.json());
 app.use(pinoHttp({ logger }));
 app.use(mongoLoggingMiddleware);
 
-// Connect to database
-connectDB();
+// Connect to database and run recurring scheduler (same as all-in-one app)
+connectDB()
+  .then(() => {
+    const { startRecurringSchedulesRunner } = require('./src/services/recurring.service');
+    startRecurringSchedulesRunner();
+  })
+  .catch(() => {});
 
 // Health check endpoint
 app.get('/', (req, res) => {

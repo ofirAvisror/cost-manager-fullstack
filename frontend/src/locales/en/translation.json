@@ -11,7 +11,8 @@
     "filters": "Filters",
     "notifications": "Notifications",
     "settings": "Settings",
-    "savingsGoals": "Savings Goals"
+    "savingsGoals": "Savings Goals",
+    "recurring": "Recurring"
   },
   "common": {
     "costManager": "Cost Manager",
@@ -321,6 +322,24 @@
     "ils": "ILS - Israeli Shekel",
     "gbp": "GBP - British Pound",
     "euro": "EURO - Euro"
+  },
+  "recurring": {
+    "title": "Recurring expenses",
+    "subtitle": "These templates add the same expense to your ledger automatically on each due date (for example every month).",
+    "enable": "Repeat this expense on a schedule",
+    "frequencyPrompt": "How often",
+    "nextDue": "Next due",
+    "stop": "Stop schedule",
+    "stopped": "Recurring schedule removed",
+    "stopFailed": "Could not remove schedule",
+    "loadFailed": "Could not load recurring schedules",
+    "empty": "No recurring expenses yet. Turn on “Repeat this expense” when adding a transaction.",
+    "frequency": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    }
   },
   "savingsGoals": {
     "title": "Savings Goals",

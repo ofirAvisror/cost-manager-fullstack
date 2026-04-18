@@ -1,6 +1,7 @@
 const Cost = require('../models/Cost');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
+const { householdOwnerIdsFromUser, resolveHouseholdOwnerIds } = require('../utils/household');
 
 /**
  * Get overall financial summary for a user
@@ -11,7 +12,8 @@ async function getSummary(userid) {
     throw new Error('User not found');
   }
 
-  const costs = await Cost.find({ userid: parseInt(userid) });
+  const ownerIds = householdOwnerIdsFromUser(user);
+  const costs = await Cost.find({ userid: { $in: ownerIds }, schedule_only: { $ne: true } });
 
   const totalIncome = costs
     .filter(t => t.type === 'income')
@@ -50,6 +52,7 @@ async function getTrends(userid, year) {
 
   const costs = await Cost.find({
     userid: parseInt(userid),
+    schedule_only: { $ne: true },
     created_at: { $gte: startDate, $lte: endDate }
   });
 
@@ -87,7 +90,8 @@ async function getTrends(userid, year) {
  * Get category breakdown
  */
 async function getCategories(userid, type, year, month) {
-  const query = { userid: parseInt(userid) };
+  const ownerIds = await resolveHouseholdOwnerIds(userid);
+  const query = { userid: { $in: ownerIds }, schedule_only: { $ne: true } };
   if (type) {
     query.type = type.toLowerCase();
   }
@@ -149,11 +153,13 @@ async function getComparison(userid, year, month) {
 
   const currentCosts = await Cost.find({
     userid: parseInt(userid),
+    schedule_only: { $ne: true },
     created_at: { $gte: currentStart, $lte: currentEnd }
   });
 
   const prevCosts = await Cost.find({
     userid: parseInt(userid),
+    schedule_only: { $ne: true },
     created_at: { $gte: prevStart, $lte: prevEnd }
   });
 
@@ -206,8 +212,11 @@ async function getYearly(userid, year) {
   const startDate = new Date(yearNum, 0, 1);
   const endDate = new Date(yearNum, 11, 31, 23, 59, 59);
 
+  const ownerIds = await resolveHouseholdOwnerIds(userid);
+
   const costs = await Cost.find({
-    userid: parseInt(userid),
+    userid: { $in: ownerIds },
+    schedule_only: { $ne: true },
     created_at: { $gte: startDate, $lte: endDate }
   });
 

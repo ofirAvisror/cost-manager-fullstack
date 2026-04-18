@@ -118,6 +118,7 @@ async function getBudgetStatus(userid, year, month) {
   const expenses = await Cost.find({
     userid: userIdNum,
     type: 'expense',
+    schedule_only: { $ne: true },
     created_at: { $gte: startDate, $lte: endDate }
   });
 

@@ -29,6 +29,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SavingsIcon from '@mui/icons-material/Savings';
 import PeopleIcon from '@mui/icons-material/People';
+import RepeatIcon from '@mui/icons-material/Repeat';
 
 const drawerWidth = 280;
 
@@ -53,6 +54,7 @@ export default function Sidebar({ open, onClose, currentView, onViewChange, part
   const navItems = [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: <DashboardIcon /> },
     { id: 'add-cost', label: t('navigation.addCost'), icon: <AddCircleOutlineIcon /> },
+    { id: 'recurring', label: t('navigation.recurring'), icon: <RepeatIcon /> },
     { id: 'report', label: t('navigation.report'), icon: <AssessmentIcon /> },
     { id: 'pie-chart', label: t('navigation.pieChart'), icon: <PieChartIcon /> },
     { id: 'bar-chart', label: t('navigation.barChart'), icon: <BarChartIcon /> },

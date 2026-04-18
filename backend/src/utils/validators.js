@@ -18,12 +18,25 @@ function validateCostType(type) {
 }
 
 /**
- * Validate cost category based on type
+ * Validate cost category based on type (legacy whitelist)
  */
 function validateCategory(category, type, expenseCategories, incomeCategories) {
   const normalizedCategory = category.toLowerCase();
   const validCategories = type.toLowerCase() === 'income' ? incomeCategories : expenseCategories;
   return validCategories.includes(normalizedCategory);
+}
+
+/**
+ * Validate cost category label (user-defined categories allowed)
+ */
+function validateCostCategoryLabel(category) {
+  if (category === undefined || category === null) return false;
+  if (typeof category !== 'string') return false;
+  const trimmed = category.trim();
+  if (!trimmed.length) return false;
+  if (trimmed.length > 64) return false;
+  if (/[\r\n\x00]/.test(trimmed)) return false;
+  return true;
 }
 
 /**
@@ -62,6 +75,7 @@ module.exports = {
   validateCostType,
   validateTransactionType: validateCostType, // Alias for backward compatibility
   validateCategory,
+  validateCostCategoryLabel,
   validateDate,
   validatePositiveNumber,
   validateMonth,
