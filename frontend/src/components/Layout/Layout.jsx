@@ -7,6 +7,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Header from './Header';
 import Sidebar, { drawerWidth } from './Sidebar';
+import { mainBelowAppBar } from './belowAppBarSx';
 
 /**
  * Layout component
@@ -81,9 +82,8 @@ export default function Layout({
           } : {
             marginLeft: 0,
           }),
-          mt: '64px',
+          ...mainBelowAppBar(theme),
           bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,

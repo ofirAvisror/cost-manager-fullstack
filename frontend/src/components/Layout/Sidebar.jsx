@@ -30,6 +30,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import SavingsIcon from '@mui/icons-material/Savings';
 import PeopleIcon from '@mui/icons-material/People';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import { drawerPaperBelowAppBar } from './belowAppBarSx';
 
 const drawerWidth = 280;
 
@@ -147,8 +148,7 @@ export default function Sidebar({ open, onClose, currentView, onViewChange, part
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          top: '64px', // Position below header
-          height: 'calc(100vh - 64px)',
+          ...drawerPaperBelowAppBar(muiTheme),
           zIndex: (theme) => theme.zIndex.drawer,
           position: 'fixed',
           ...(anchor === 'right' ? {
