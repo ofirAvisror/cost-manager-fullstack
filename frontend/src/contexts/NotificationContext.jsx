@@ -4,6 +4,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import i18n from '../i18n/config';
+import { getUserId } from '../lib/api-db';
+import { computeBudgetSpent } from '../lib/budgetSpent';
 
 const NotificationContext = createContext(undefined);
 
@@ -163,38 +165,30 @@ export function NotificationProvider({ children }) {
         })
       );
       const newNotifications = [];
+      const uid = getUserId();
 
       for (const budget of budgets) {
         let spent = 0;
 
         try {
-          if (budget.type === 'monthly' && budget.month) {
-            const report = await db.getReport(budget.year, budget.month, budget.currency);
-            spent = report.total.total;
-          } else if (budget.type === 'yearly') {
-            let total = 0;
-            for (let m = 1; m <= 12; m++) {
-              const report = await db.getReport(budget.year, m, budget.currency);
-              total += report.total.total;
-            }
-            spent = total;
-          }
+          spent = await computeBudgetSpent(db, budget, uid);
 
-          const percentage = (spent / budget.amount) * 100;
+          const cap = Number(budget.amount) || 0;
+          const percentage = cap > 0 ? (spent / cap) * 100 : 0;
 
-          if (spent > budget.amount) {
+          if (cap > 0 && spent > cap) {
             newNotifications.push({
               id: `budget-exceeded-${budget.id}`,
               type: 'budget_exceeded',
               message: i18n.t('notifications.budgetExceeded', {
                 spent: spent.toFixed(2),
                 currency: budget.currency,
-                amount: budget.amount.toFixed(2),
+                amount: cap.toFixed(2),
               }),
               timestamp: new Date(),
               read: false,
             });
-          } else if (percentage >= 80) {
+          } else if (cap > 0 && percentage >= 80) {
             newNotifications.push({
               id: `budget-warning-${budget.id}`,
               type: 'budget_warning',

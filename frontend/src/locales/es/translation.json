@@ -212,7 +212,12 @@
     "used": "usado",
     "monthlyLabel": "Mensual ({{month}}/{{year}})",
     "yearlyLabel": "Anual ({{year}})",
-    "categoryLabel": "Categoría: {{category}}"
+    "categoryLabel": "Categoría: {{category}}",
+    "spentBasisLabel": "Qué gastos cuentan para este presupuesto",
+    "spentBasisPersonal": "Personal (tu parte en gastos compartidos, como en el informe)",
+    "spentBasisCoupleShared": "Pareja — solo gastos compartidos (importe completo de cada gasto conjunto)",
+    "spentBasisHint": "Personal coincide con tu línea en el informe mensual. Pareja cuenta solo filas compartidas, con el importe conjunto completo.",
+    "coupleSharedShort": "Solo compartido"
   },
   "categories": {
     "title": "Gestión de Categorías",

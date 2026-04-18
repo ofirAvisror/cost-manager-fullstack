@@ -19,7 +19,11 @@ import {
   Select,
   MenuItem,
   Alert,
-  CircularProgress
+  CircularProgress,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../../contexts/HouseholdViewContext';
@@ -27,6 +31,8 @@ import AddIcon from '@mui/icons-material/Add';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BudgetCard from './BudgetCard';
 import toast from 'react-hot-toast';
+import { getUserId } from '../../lib/api-db';
+import { computeBudgetSpent } from '../../lib/budgetSpent';
 
 /**
  * BudgetManager component
@@ -47,6 +53,7 @@ export default function BudgetManager({ db }) {
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [spentAmounts, setSpentAmounts] = useState({});
+  const [spentBasis, setSpentBasis] = useState('personal');
   const [budgetToDelete, setBudgetToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -94,40 +101,18 @@ export default function BudgetManager({ db }) {
 
   const loadSpentAmounts = async function() {
     if (!db) return;
-    
+
     const amounts = {};
-    
+    const uid = getUserId();
+
     for (const budget of budgets) {
       try {
-        let spent = 0;
-        
-        if (budget.type === 'monthly' && budget.month) {
-          const report = await db.getReport(budget.year, budget.month, budget.currency);
-          spent = report.total.total;
-        } else if (budget.type === 'yearly') {
-          let total = 0;
-          for (let m = 1; m <= 12; m++) {
-            const report = await db.getReport(budget.year, m, budget.currency);
-            total += report.total.total;
-          }
-          spent = total;
-        } else if (budget.type === 'category' && budget.category) {
-          const costs = await db.getCostsByCategory(budget.category);
-          // Convert to budget currency
-          const exchangeRateUrl = localStorage.getItem('exchangeRateUrl') || './exchange-rates.json';
-          const rates = await fetch(exchangeRateUrl).then(r => r.json());
-          spent = costs.reduce((sum, cost) => {
-            const amountInUSD = cost.sum / rates[cost.currency];
-            return sum + (amountInUSD * rates[budget.currency]);
-          }, 0);
-        }
-        
-        amounts[budget.id] = spent;
+        amounts[budget.id] = await computeBudgetSpent(db, budget, uid);
       } catch (error) {
         amounts[budget.id] = 0;
       }
     }
-    
+
     setSpentAmounts(amounts);
   };
 
@@ -139,6 +124,7 @@ export default function BudgetManager({ db }) {
     setAmount('');
     setCurrency('ILS');
     setCategory('');
+    setSpentBasis('personal');
   };
 
   const handleCloseDialog = function() {
@@ -383,6 +369,30 @@ export default function BudgetManager({ db }) {
                 <MenuItem value="GBP">GBP</MenuItem>
                 <MenuItem value="EURO">EURO</MenuItem>
               </Select>
+            </FormControl>
+
+            <FormControl component="fieldset" margin="normal" sx={{ width: '100%' }}>
+              <FormLabel component="legend">{t('budget.spentBasisLabel')}</FormLabel>
+              <RadioGroup
+                value={spentBasis}
+                onChange={function (e) {
+                  setSpentBasis(e.target.value);
+                }}
+              >
+                <FormControlLabel
+                  value="personal"
+                  control={<Radio />}
+                  label={t('budget.spentBasisPersonal')}
+                />
+                <FormControlLabel
+                  value="couple_shared"
+                  control={<Radio />}
+                  label={t('budget.spentBasisCoupleShared')}
+                />
+              </RadioGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                {t('budget.spentBasisHint')}
+              </Typography>
             </FormControl>
           </Box>
         </DialogContent>

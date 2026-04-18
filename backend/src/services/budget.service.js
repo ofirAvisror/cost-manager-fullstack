@@ -6,8 +6,13 @@ const { logger } = require('../config/logger');
 /**
  * Create a new budget
  */
+function normalizeSpentBasis(raw) {
+  const s = String(raw || 'personal').toLowerCase();
+  return s === 'couple_shared' ? 'couple_shared' : 'personal';
+}
+
 async function createBudget(budgetData) {
-  const { userid, year, month, type, category, amount, currency } = budgetData;
+  const { userid, year, month, type, category, amount, currency, spent_basis } = budgetData;
 
   const normalizedType = type.toLowerCase();
 
@@ -22,7 +27,8 @@ async function createBudget(budgetData) {
     year: parseInt(year),
     type: normalizedType,
     amount,
-    currency: currency || 'ILS'
+    currency: currency || 'ILS',
+    spent_basis: normalizeSpentBasis(spent_basis),
   };
 
   if (normalizedType === 'monthly') {
@@ -67,7 +73,7 @@ async function getBudgets(filters) {
  * Update a budget
  */
 async function updateBudget(budgetId, updateData) {
-  const { amount, currency, category } = updateData;
+  const { amount, currency, category, spent_basis } = updateData;
 
   const budget = await Budget.findById(budgetId);
   if (!budget) {
@@ -84,6 +90,10 @@ async function updateBudget(budgetId, updateData) {
 
   if (category && budget.type === 'category') {
     budget.category = category.toLowerCase();
+  }
+
+  if (spent_basis !== undefined) {
+    budget.spent_basis = normalizeSpentBasis(spent_basis);
   }
 
   await budget.save();

@@ -188,10 +188,13 @@ export async function openCostsDB(getViewFilter) {
       });
     },
 
-    async getAllCosts() {
+    async getAllCosts(options) {
+      const opts = typeof options === 'object' && options !== null ? options : {};
+      const uid = opts.userId != null ? parseInt(String(opts.userId), 10) : getUserId();
+      const vs = opts.viewScope != null ? String(opts.viewScope) : viewScopeParam();
       const params = new URLSearchParams({
-        userid: String(getUserId()),
-        viewScope: viewScopeParam(),
+        userid: String(uid),
+        viewScope: vs,
       });
       const items = await apiRequest(`/api/costs?${params.toString()}`);
       return (items || []).map(deserializeCost);
@@ -215,10 +218,14 @@ export async function openCostsDB(getViewFilter) {
       await apiRequest(`/api/costs/schedules/${id}`, { method: 'DELETE' });
     },
 
-    async getReport(year, month, currency) {
-      const vs = encodeURIComponent(viewScopeParam());
+    async getReport(year, month, currency, options) {
+      const opts = typeof options === 'object' && options !== null ? options : {};
+      const vsRaw = opts.viewScope != null ? String(opts.viewScope) : viewScopeParam();
+      const vs = encodeURIComponent(vsRaw);
+      const anchorId =
+        opts.userId != null ? parseInt(String(opts.userId), 10) : getUserId();
       const report = await apiRequest(
-        `/api/report?id=${getUserId()}&year=${year}&month=${month}&viewScope=${vs}`
+        `/api/report?id=${anchorId}&year=${year}&month=${month}&viewScope=${vs}`
       );
 
       function flattenCategoryBuckets(buckets, type) {
@@ -344,8 +351,8 @@ export async function openCostsDB(getViewFilter) {
       };
     },
 
-    async getCostsByCategory(category) {
-      const all = await dbObject.getAllCosts();
+    async getCostsByCategory(category, options) {
+      const all = await dbObject.getAllCosts(options);
       return all.filter((item) => item.category === category);
     },
 
@@ -458,6 +465,8 @@ export async function openCostsDB(getViewFilter) {
     },
 
     async setBudget(budgetData) {
+      const spentBasis =
+        budgetData.spent_basis === 'couple_shared' ? 'couple_shared' : 'personal';
       const payload = {
         userid: getUserId(),
         year: budgetData.year,
@@ -466,6 +475,7 @@ export async function openCostsDB(getViewFilter) {
         category: budgetData.type === 'category' ? budgetData.category : undefined,
         amount: budgetData.amount,
         currency: toBackendCurrency(budgetData.currency || 'ILS'),
+        spent_basis: spentBasis,
       };
 
       await apiRequest('/api/budgets', {
@@ -482,12 +492,15 @@ export async function openCostsDB(getViewFilter) {
       const budgets = await apiRequest(`/api/budgets?${params.toString()}`);
       return (budgets || []).map((budget) => ({
         id: budget._id || budget.id,
+        ownerUserId: budget.userid,
         year: budget.year,
         month: budget.month,
         amount: budget.amount,
         currency: toFrontendCurrency(budget.currency),
         type: budget.type,
         category: budget.category,
+        spent_basis:
+          budget.spent_basis === 'couple_shared' ? 'couple_shared' : 'personal',
       }));
     },
 

@@ -212,7 +212,12 @@
     "used": "משומש",
     "monthlyLabel": "חודשי ({{month}}/{{year}})",
     "yearlyLabel": "שנתי ({{year}})",
-    "categoryLabel": "קטגוריה: {{category}}"
+    "categoryLabel": "קטגוריה: {{category}}",
+    "spentBasisLabel": "אילו הוצאות נספרות מול התקציב",
+    "spentBasisPersonal": "אישי — החלק שלך בהוצאות משותפות (כמו בדוח)",
+    "spentBasisCoupleShared": "זוגי — רק הוצאות משותפות (סכום מלא של כל עסקה משותפת)",
+    "spentBasisHint": "אישי תואם את הסכום לשורה שלך בדוח החודשי. זוגי סופר רק עסקאות מסומנות כמשותפות, במלוא הסכום המשותף.",
+    "coupleSharedShort": "משותף בלבד"
   },
   "categories": {
     "title": "ניהול קטגוריות",

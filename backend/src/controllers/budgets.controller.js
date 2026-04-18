@@ -61,6 +61,16 @@ async function createBudget(req, res) {
       });
     }
 
+    if (req.body.spent_basis != null && req.body.spent_basis !== '') {
+      const sb = String(req.body.spent_basis).toLowerCase();
+      if (!['personal', 'couple_shared'].includes(sb)) {
+        return res.status(400).json({
+          id: 'VALIDATION_ERROR',
+          message: 'spent_basis must be "personal" or "couple_shared"',
+        });
+      }
+    }
+
     const budget = await budgetService.createBudget(req.body);
     res.status(201).json(budget);
   } catch (error) {

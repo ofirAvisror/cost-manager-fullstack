@@ -38,12 +38,16 @@ export default function BudgetCard({ budget, spent, onDelete }) {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {getBudgetTypeLabel()}
             </Typography>
-            <Chip 
-              label={budget.type} 
-              size="small" 
-              sx={{ mt: 1 }}
-              color={budget.type === 'monthly' ? 'primary' : budget.type === 'yearly' ? 'secondary' : 'default'}
-            />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+              <Chip 
+                label={budget.type} 
+                size="small" 
+                color={budget.type === 'monthly' ? 'primary' : budget.type === 'yearly' ? 'secondary' : 'default'}
+              />
+              {budget.spent_basis === 'couple_shared' ? (
+                <Chip label={t('budget.coupleSharedShort')} size="small" color="secondary" variant="outlined" />
+              ) : null}
+            </Box>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>

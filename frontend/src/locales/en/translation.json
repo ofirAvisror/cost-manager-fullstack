@@ -212,7 +212,12 @@
     "used": "used",
     "monthlyLabel": "Monthly ({{month}}/{{year}})",
     "yearlyLabel": "Yearly ({{year}})",
-    "categoryLabel": "Category: {{category}}"
+    "categoryLabel": "Category: {{category}}",
+    "spentBasisLabel": "What spending counts toward this budget",
+    "spentBasisPersonal": "Personal (your share of shared expenses, like the report)",
+    "spentBasisCoupleShared": "Couple — shared expenses only (full amount of each shared bill)",
+    "spentBasisHint": "Personal matches each person’s line in the monthly report. Couple counts only rows marked as shared, using the full joint amount.",
+    "coupleSharedShort": "Shared only"
   },
   "categories": {
     "title": "Categories Management",

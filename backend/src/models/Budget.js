@@ -49,30 +49,28 @@ const budgetSchema = new mongoose.Schema({
     type: String,
     enum: ['ILS', 'USD', 'EUR'],
     default: 'ILS'
-  }
+  },
+  /** personal: attributed share (like report "self"); couple_shared: only shared expenses, full joint amounts */
+  spent_basis: {
+    type: String,
+    enum: ['personal', 'couple_shared'],
+    default: 'personal',
+    lowercase: true,
+  },
 }, { timestamps: true });
 
-// Compound index for efficient queries and uniqueness
 budgetSchema.index(
-  { userid: 1, year: 1, month: 1, type: 1, category: 1 },
-  { unique: true, sparse: true }
-);
-
-// Unique monthly budget per month
-budgetSchema.index(
-  { userid: 1, year: 1, month: 1, type: 1 },
+  { userid: 1, year: 1, month: 1, type: 1, spent_basis: 1 },
   { unique: true, partialFilterExpression: { type: 'monthly' } }
 );
 
-// Unique yearly budget per year
 budgetSchema.index(
-  { userid: 1, year: 1, type: 1 },
+  { userid: 1, year: 1, type: 1, spent_basis: 1 },
   { unique: true, partialFilterExpression: { type: 'yearly' } }
 );
 
-// Unique category budget per category/year
 budgetSchema.index(
-  { userid: 1, year: 1, type: 1, category: 1 },
+  { userid: 1, year: 1, type: 1, category: 1, spent_basis: 1 },
   { unique: true, partialFilterExpression: { type: 'category' } }
 );
 
