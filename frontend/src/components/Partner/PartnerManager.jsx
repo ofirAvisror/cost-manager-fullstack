@@ -198,9 +198,13 @@ export default function PartnerManager({ db }) {
               {settlement.who_owes_whom?.amount > 0 ? (
                 <Alert severity="warning">
                   {t('partner.transferRequired', {
-                    from: settlement.who_owes_whom.from_userid,
+                    from:
+                      settlement.who_owes_whom.from_display_name ||
+                      settlement.who_owes_whom.from_userid,
                     amount: settlement.who_owes_whom.amount.toFixed(2),
-                    to: settlement.who_owes_whom.to_userid,
+                    to:
+                      settlement.who_owes_whom.to_display_name ||
+                      settlement.who_owes_whom.to_userid,
                   })}
                 </Alert>
               ) : (

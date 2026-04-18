@@ -12,19 +12,27 @@ export function getPerspectiveUserId(viewScope, myUserId, partnerId) {
   if (viewScope === 'partner' && partnerId != null && Number.isFinite(Number(partnerId))) {
     return Number(partnerId);
   }
-  return myUserId;
+  const me = Number(myUserId);
+  return Number.isFinite(me) ? me : myUserId;
+}
+
+function numUserId(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 function sharedPortionForUser(row, perspectiveUserId, sum) {
   const split = row.sharedSplit || { self_percentage: 50, partner_percentage: 50 };
   const selfPct = Number(split.self_percentage);
   const partnerPct = Number(split.partner_percentage);
-  const owner = row.ownerUserId ?? row.owner_userid;
-  const sharedWith = row.sharedWithUserId ?? row.shared_with_userid;
-  if (perspectiveUserId != null && owner === perspectiveUserId) {
+  const owner = numUserId(row.ownerUserId ?? row.owner_userid);
+  const sharedWith = numUserId(row.sharedWithUserId ?? row.shared_with_userid);
+  const perspective = numUserId(perspectiveUserId);
+  if (perspective != null && owner != null && owner === perspective) {
     return sum * (selfPct / 100);
   }
-  if (perspectiveUserId != null && sharedWith != null && sharedWith === perspectiveUserId) {
+  if (perspective != null && sharedWith != null && sharedWith === perspective) {
     return sum * (partnerPct / 100);
   }
   return sum * (selfPct / 100);
@@ -39,7 +47,8 @@ export function getExpenseLineAmount(row, viewScope, perspectiveUserId) {
     return Number(row?.sum) || 0;
   }
   const sum = Number(row?.sum) || 0;
-  if (viewScope === 'household' || !row?.isShared) {
+  const isShared = !!(row?.isShared ?? row?.is_shared);
+  if (viewScope === 'household' || !isShared) {
     return sum;
   }
   return sharedPortionForUser(row, perspectiveUserId, sum);
@@ -51,10 +60,12 @@ export function getExpenseLineAmount(row, viewScope, perspectiveUserId) {
 export function getHouseholdExpenseKind(row, myUserId, partnerId) {
   const typ = row?.type || 'expense';
   if (typ !== 'expense') return null;
-  if (row?.isShared) return 'shared';
-  const owner = row.ownerUserId ?? row.owner_userid;
-  if (owner === myUserId) return 'mine';
-  if (partnerId != null && Number.isFinite(Number(partnerId)) && owner === Number(partnerId)) {
+  if (row?.isShared ?? row?.is_shared) return 'shared';
+  const owner = numUserId(row.ownerUserId ?? row.owner_userid);
+  const me = numUserId(myUserId);
+  const pid = numUserId(partnerId);
+  if (owner != null && me != null && owner === me) return 'mine';
+  if (owner != null && pid != null && owner === pid) {
     return 'theirs';
   }
   return 'mine';

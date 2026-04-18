@@ -217,7 +217,13 @@
     "spentBasisPersonal": "אישי — החלק שלך בהוצאות משותפות (כמו בדוח)",
     "spentBasisCoupleShared": "זוגי — רק הוצאות משותפות (סכום מלא של כל עסקה משותפת)",
     "spentBasisHint": "אישי תואם את הסכום לשורה שלך בדוח החודשי. זוגי סופר רק עסקאות מסומנות כמשותפות, במלוא הסכום המשותף.",
-    "coupleSharedShort": "משותף בלבד"
+    "coupleSharedShort": "משותף בלבד",
+    "listHintHousehold": "תצוגת זוג: מוצגים רק תקציבים זוגיים (מול הוצאות משותפות בלבד, בסכום המלא של כל עסקה משותפת).",
+    "listHintSelf": "תצוגת אני: רק התקציבים האישיים שלך. ההוצא נספר לפי החלק שלך בהוצאות משותפות, כמו בדוח.",
+    "listHintPartner": "תצוגת בן/בת הזוג: רק התקציבים האישיים שלו/ה. הסכומים לפי החלק שלו/ה בהוצאות משותפות.",
+    "addAsHouseholdCoupleOnly": "בתצוגת זוג, תקציב חדש הוא תמיד תקציב זוגי (רק הוצאות משותפות, סכום מלא לכל שורה משותפת).",
+    "coupleBudgetSwitchToHousehold": "עבור לתצוגת זוג כדי לראות את התקציב ברשימה.",
+    "coupleBudgetVisibleHouseholdOnly": "תקציב זוגי מופיע רק בתצוגת זוג."
   },
   "categories": {
     "title": "ניהול קטגוריות",
@@ -295,7 +301,7 @@
     "calculate": "חשב",
     "yourNet": "הנטו שלך: {{amount}}",
     "partnerNet": "הנטו של הפרטנר: {{amount}}",
-    "transferRequired": "משתמש {{from}} חייב {{amount}} למשתמש {{to}}.",
+    "transferRequired": "{{from}} חייב להעביר {{amount}} ל-{{to}}.",
     "noTransferNeeded": "לא נדרשת העברה לחודש הזה.",
     "noEmail": "ללא אימייל",
     "messages": {

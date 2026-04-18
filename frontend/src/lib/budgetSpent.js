@@ -35,7 +35,7 @@ async function sumMonthCoupleShared(db, year, month, currency, anchorUserId) {
   let s = 0;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    if (row.isShared) {
+    if (row.isShared ?? row.is_shared) {
       s += Number(row.sum) || 0;
     }
   }
@@ -114,7 +114,7 @@ export async function computeBudgetSpent(db, budget, loggedInUserId) {
       if ((cost.type || 'expense') !== 'expense') {
         continue;
       }
-      if (basis === 'couple_shared' && !cost.isShared) {
+      if (basis === 'couple_shared' && !(cost.isShared ?? cost.is_shared)) {
         continue;
       }
       let amt =

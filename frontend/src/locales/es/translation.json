@@ -217,7 +217,13 @@
     "spentBasisPersonal": "Personal (tu parte en gastos compartidos, como en el informe)",
     "spentBasisCoupleShared": "Pareja — solo gastos compartidos (importe completo de cada gasto conjunto)",
     "spentBasisHint": "Personal coincide con tu línea en el informe mensual. Pareja cuenta solo filas compartidas, con el importe conjunto completo.",
-    "coupleSharedShort": "Solo compartido"
+    "coupleSharedShort": "Solo compartido",
+    "listHintHousehold": "Vista pareja: solo presupuestos conjuntos (gastos compartidos, importe completo de cada gasto conjunto).",
+    "listHintSelf": "Tu vista: solo tus presupuestos personales. El gasto usa tu parte en gastos compartidos, como en el informe.",
+    "listHintPartner": "Vista pareja: solo sus presupuestos personales. Los importes usan su parte en gastos compartidos.",
+    "addAsHouseholdCoupleOnly": "En vista pareja, los presupuestos nuevos son siempre conjuntos (solo gastos compartidos).",
+    "coupleBudgetSwitchToHousehold": "Cambia a la vista pareja para ver este presupuesto en la lista.",
+    "coupleBudgetVisibleHouseholdOnly": "Los presupuestos conjuntos solo aparecen en la vista pareja."
   },
   "categories": {
     "title": "Gestión de Categorías",
@@ -295,7 +301,7 @@
     "calculate": "Calcular",
     "yourNet": "Tu neto: {{amount}}",
     "partnerNet": "Neto de la pareja: {{amount}}",
-    "transferRequired": "El usuario {{from}} debe {{amount}} al usuario {{to}}.",
+    "transferRequired": "{{from}} debe {{amount}} a {{to}}.",
     "noTransferNeeded": "No se necesita transferencia para este mes.",
     "noEmail": "sin correo",
     "messages": {

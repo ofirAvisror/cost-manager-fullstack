@@ -42,6 +42,7 @@ import { computeBudgetSpent } from '../../lib/budgetSpent';
 export default function BudgetManager({ db }) {
   const { t } = useTranslation();
   const householdView = useHouseholdView();
+  const { viewScope, partnerConnected } = householdView;
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -124,7 +125,7 @@ export default function BudgetManager({ db }) {
     setAmount('');
     setCurrency('ILS');
     setCategory('');
-    setSpentBasis('personal');
+    setSpentBasis(viewScope === 'household' ? 'couple_shared' : 'personal');
   };
 
   const handleCloseDialog = function() {
@@ -167,17 +168,28 @@ export default function BudgetManager({ db }) {
     }
 
     try {
+      const basis =
+        viewScope === 'household'
+          ? 'couple_shared'
+          : spentBasis === 'couple_shared' && partnerConnected
+            ? 'couple_shared'
+            : 'personal';
       const budgetData = {
         year,
         amount: amountValue,
         currency,
         type: budgetType,
+        spent_basis: basis,
         ...(budgetType === 'monthly' && { month }),
         ...(budgetType === 'category' && category && { category }),
       };
 
       await db.setBudget(budgetData);
-      toast.success(t('messages.budgetSaved'));
+      if (basis === 'couple_shared' && viewScope !== 'household') {
+        toast.success(t('messages.budgetSaved') + ' — ' + t('budget.coupleBudgetSwitchToHousehold'));
+      } else {
+        toast.success(t('messages.budgetSaved'));
+      }
       handleCloseDialog();
       loadBudgets();
     } catch (error) {
@@ -203,10 +215,19 @@ export default function BudgetManager({ db }) {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          {t('budget.title')}
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            {t('budget.title')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560 }}>
+            {viewScope === 'household'
+              ? t('budget.listHintHousehold')
+              : viewScope === 'partner'
+                ? t('budget.listHintPartner')
+                : t('budget.listHintSelf')}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -371,29 +392,39 @@ export default function BudgetManager({ db }) {
               </Select>
             </FormControl>
 
-            <FormControl component="fieldset" margin="normal" sx={{ width: '100%' }}>
-              <FormLabel component="legend">{t('budget.spentBasisLabel')}</FormLabel>
-              <RadioGroup
-                value={spentBasis}
-                onChange={function (e) {
-                  setSpentBasis(e.target.value);
-                }}
-              >
-                <FormControlLabel
-                  value="personal"
-                  control={<Radio />}
-                  label={t('budget.spentBasisPersonal')}
-                />
-                <FormControlLabel
-                  value="couple_shared"
-                  control={<Radio />}
-                  label={t('budget.spentBasisCoupleShared')}
-                />
-              </RadioGroup>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                {t('budget.spentBasisHint')}
-              </Typography>
-            </FormControl>
+            {viewScope === 'household' ? (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                {t('budget.addAsHouseholdCoupleOnly')}
+              </Alert>
+            ) : (
+              <FormControl component="fieldset" margin="normal" sx={{ width: '100%' }}>
+                <FormLabel component="legend">{t('budget.spentBasisLabel')}</FormLabel>
+                <RadioGroup
+                  value={spentBasis}
+                  onChange={function (e) {
+                    setSpentBasis(e.target.value);
+                  }}
+                >
+                  <FormControlLabel
+                    value="personal"
+                    control={<Radio />}
+                    label={t('budget.spentBasisPersonal')}
+                  />
+                  {partnerConnected ? (
+                    <FormControlLabel
+                      value="couple_shared"
+                      control={<Radio />}
+                      label={t('budget.spentBasisCoupleShared')}
+                    />
+                  ) : null}
+                </RadioGroup>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {partnerConnected
+                    ? t('budget.spentBasisHint') + ' ' + t('budget.coupleBudgetVisibleHouseholdOnly')
+                    : t('budget.spentBasisHint')}
+                </Typography>
+              </FormControl>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>

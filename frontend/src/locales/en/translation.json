@@ -217,7 +217,13 @@
     "spentBasisPersonal": "Personal (your share of shared expenses, like the report)",
     "spentBasisCoupleShared": "Couple — shared expenses only (full amount of each shared bill)",
     "spentBasisHint": "Personal matches each person’s line in the monthly report. Couple counts only rows marked as shared, using the full joint amount.",
-    "coupleSharedShort": "Shared only"
+    "coupleSharedShort": "Shared only",
+    "listHintHousehold": "Couple view: only joint (shared-expense) budgets. Spending counts full shared bills only.",
+    "listHintSelf": "Your view: only your personal budgets. Spending uses your share of shared expenses, like the report.",
+    "listHintPartner": "Partner view: only their personal budgets. Amounts use their share of shared expenses.",
+    "addAsHouseholdCoupleOnly": "In couple view, new budgets are always joint budgets (shared expenses only, full amount per shared item).",
+    "coupleBudgetSwitchToHousehold": "Switch to couple view to see this budget in the list.",
+    "coupleBudgetVisibleHouseholdOnly": "Joint budgets appear only under couple view."
   },
   "categories": {
     "title": "Categories Management",
@@ -295,7 +301,7 @@
     "calculate": "Calculate",
     "yourNet": "Your net: {{amount}}",
     "partnerNet": "Partner net: {{amount}}",
-    "transferRequired": "User {{from}} owes {{amount}} to user {{to}}.",
+    "transferRequired": "{{from}} owes {{amount}} to {{to}}.",
     "noTransferNeeded": "No transfer needed for this month.",
     "noEmail": "no email",
     "messages": {

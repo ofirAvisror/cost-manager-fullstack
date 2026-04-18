@@ -1,6 +1,8 @@
 /**
  * api-db.js - Backend API wrapper with idb-react-compatible interface.
  */
+import { getPerspectiveUserId, getExpenseLineAmount } from './expenseDisplay';
+
 const DEFAULT_API_BASE_URL = 'http://localhost:4000';
 const DEFAULT_USER_ID = 1;
 const AUTH_STORAGE_KEY = 'cm_auth';
@@ -367,28 +369,108 @@ export async function openCostsDB(getViewFilter) {
     },
 
     async getStatistics(year, month, currency) {
-      const [summary, comparison, categories] = await Promise.all([
-        apiRequest(`/api/analytics/summary?userid=${getUserId()}`),
-        apiRequest(`/api/analytics/comparison?userid=${getUserId()}&year=${year}&month=${month}`),
-        apiRequest(`/api/analytics/categories?userid=${getUserId()}&type=expense&year=${year}&month=${month}`),
-      ]);
+      const vf = resolveVF();
+      const viewScope = vf.viewScope || 'household';
+      const partnerRaw = vf.partnerId;
+      const partnerId =
+        partnerRaw != null && Number.isFinite(Number(partnerRaw))
+          ? Number(partnerRaw)
+          : null;
+      const myUserId = getUserId();
+      const yearNum = parseInt(year, 10);
+      const monthNum = parseInt(month, 10);
+      const vsParam = encodeURIComponent(viewScope);
+      const uid = getUserId();
+
+      const report = await dbObject.getReport(yearNum, monthNum, currency);
+      const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+      const prevMonthNum = monthNum === 1 ? 12 : monthNum - 1;
+      const prevYearNum = monthNum === 1 ? yearNum - 1 : yearNum;
+
+      if (viewScope === 'household') {
+        const [comparison, categories] = await Promise.all([
+          apiRequest(
+            `/api/analytics/comparison?userid=${uid}&year=${yearNum}&month=${monthNum}&viewScope=${vsParam}`
+          ),
+          apiRequest(
+            `/api/analytics/categories?userid=${uid}&type=expense&year=${yearNum}&month=${monthNum}&viewScope=${vsParam}`
+          ),
+        ]);
+
+        const totalByCategory = {};
+        (categories.breakdown || []).forEach(function (item) {
+          totalByCategory[item.category] = item.sum;
+        });
+
+        const currentTotal = Number(report.totals.expenses) || 0;
+        const totalIncomes = Number(report.totals.incomes) || 0;
+        const balRaw = report.totals.balance;
+        const balance =
+          typeof balRaw === 'number' && !Number.isNaN(balRaw)
+            ? balRaw
+            : totalIncomes - currentTotal;
+        const averageDaily = daysInMonth > 0 ? currentTotal / daysInMonth : 0;
+
+        return {
+          totalThisMonth: currentTotal,
+          totalIncomes,
+          totalSavings: 0,
+          balance,
+          averageDaily,
+          totalLastMonth: comparison.previous_month?.expenses || 0,
+          changePercentage: comparison.changes?.expense_change_percentage || 0,
+          totalByCategory,
+          currency,
+        };
+      }
+
+      const perspectiveUserId = getPerspectiveUserId(viewScope, myUserId, partnerId);
+      const expenseRows = report.expenses || [];
+      const incomeRows = report.incomes || [];
+
+      let currentTotal = 0;
+      for (let i = 0; i < expenseRows.length; i++) {
+        currentTotal += getExpenseLineAmount(expenseRows[i], viewScope, perspectiveUserId);
+      }
+
+      let totalIncomes = 0;
+      for (let j = 0; j < incomeRows.length; j++) {
+        totalIncomes += getExpenseLineAmount(incomeRows[j], viewScope, perspectiveUserId);
+      }
 
       const totalByCategory = {};
-      (categories.breakdown || []).forEach((item) => {
-        totalByCategory[item.category] = item.sum;
-      });
+      for (let k = 0; k < expenseRows.length; k++) {
+        const row = expenseRows[k];
+        const cat = (row.category && String(row.category).trim()) || 'other';
+        const amt = getExpenseLineAmount(row, viewScope, perspectiveUserId);
+        totalByCategory[cat] = (totalByCategory[cat] || 0) + amt;
+      }
 
-      const report = await dbObject.getReport(year, month, currency);
-      const currentTotal = report.totals.expenses;
+      const balance = totalIncomes - currentTotal;
+      const averageDaily = daysInMonth > 0 ? currentTotal / daysInMonth : 0;
+
+      const prevReport = await dbObject.getReport(prevYearNum, prevMonthNum, currency);
+      const prevExpenses = prevReport.expenses || [];
+      let totalLastMonth = 0;
+      for (let p = 0; p < prevExpenses.length; p++) {
+        totalLastMonth += getExpenseLineAmount(prevExpenses[p], viewScope, perspectiveUserId);
+      }
+
+      let changePercentage = 0;
+      if (totalLastMonth > 0) {
+        changePercentage = ((currentTotal - totalLastMonth) / totalLastMonth) * 100;
+      } else if (currentTotal > 0) {
+        changePercentage = 100;
+      }
 
       return {
-        totalThisMonth: currentTotal || 0,
-        totalIncomes: summary.total_income || 0,
+        totalThisMonth: currentTotal,
+        totalIncomes,
         totalSavings: 0,
-        balance: summary.balance || 0,
-        averageDaily: (summary.average_expense_per_cost || 0),
-        totalLastMonth: comparison.previous_month?.expenses || 0,
-        changePercentage: comparison.changes?.expense_change_percentage || 0,
+        balance,
+        averageDaily,
+        totalLastMonth,
+        changePercentage,
         totalByCategory,
         currency,
       };
@@ -485,12 +567,21 @@ export async function openCostsDB(getViewFilter) {
     },
 
     async getAllBudgets() {
+      const vf = resolveVF();
+      const scope = vf.viewScope || 'household';
+      const partnerRaw = vf.partnerId;
+      const partnerId =
+        partnerRaw != null && Number.isFinite(Number(partnerRaw))
+          ? Number(partnerRaw)
+          : null;
+      const selfId = getUserId();
+
       const params = new URLSearchParams({
         userid: String(getUserId()),
         viewScope: viewScopeParam(),
       });
       const budgets = await apiRequest(`/api/budgets?${params.toString()}`);
-      return (budgets || []).map((budget) => ({
+      const mapped = (budgets || []).map((budget) => ({
         id: budget._id || budget.id,
         ownerUserId: budget.userid,
         year: budget.year,
@@ -502,6 +593,29 @@ export async function openCostsDB(getViewFilter) {
         spent_basis:
           budget.spent_basis === 'couple_shared' ? 'couple_shared' : 'personal',
       }));
+
+      return mapped.filter(function (b) {
+        const basis = b.spent_basis === 'couple_shared' ? 'couple_shared' : 'personal';
+        const owner =
+          b.ownerUserId != null && Number.isFinite(Number(b.ownerUserId))
+            ? Number(b.ownerUserId)
+            : null;
+        if (scope === 'household') {
+          return basis === 'couple_shared';
+        }
+        if (scope === 'self') {
+          return basis === 'personal' && owner != null && owner === selfId;
+        }
+        if (scope === 'partner') {
+          return (
+            basis === 'personal' &&
+            owner != null &&
+            partnerId != null &&
+            owner === partnerId
+          );
+        }
+        return true;
+      });
     },
 
     async deleteBudget(budgetId) {

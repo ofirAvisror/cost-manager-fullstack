@@ -1,6 +1,14 @@
 const Cost = require('../models/Cost');
 const User = require('../models/User');
 
+function userDisplayName(u) {
+  if (!u) return '';
+  const first = (u.first_name || '').trim();
+  if (first) return first;
+  if (u.email) return u.email;
+  return u.id != null ? String(u.id) : '';
+}
+
 function getMonthRange(year, month) {
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 0, 23, 59, 59, 999);
@@ -77,18 +85,24 @@ async function getMonthlySettlement(currentUserId, year, month) {
   let whoOwesWhom = {
     from_userid: null,
     to_userid: null,
+    from_display_name: null,
+    to_display_name: null,
     amount: 0,
   };
   if (myNet < 0) {
     whoOwesWhom = {
       from_userid: me.id,
       to_userid: partner.id,
+      from_display_name: userDisplayName(me),
+      to_display_name: userDisplayName(partner),
       amount: Math.abs(myNet),
     };
   } else if (partnerNet < 0) {
     whoOwesWhom = {
       from_userid: partner.id,
       to_userid: me.id,
+      from_display_name: userDisplayName(partner),
+      to_display_name: userDisplayName(me),
       amount: Math.abs(partnerNet),
     };
   }
@@ -96,8 +110,20 @@ async function getMonthlySettlement(currentUserId, year, month) {
   return {
     year: yearNum,
     month: monthNum,
-    user: { id: me.id, email: me.email },
-    partner: { id: partner.id, email: partner.email },
+    user: {
+      id: me.id,
+      email: me.email,
+      first_name: me.first_name,
+      last_name: me.last_name,
+      display_name: userDisplayName(me),
+    },
+    partner: {
+      id: partner.id,
+      email: partner.email,
+      first_name: partner.first_name,
+      last_name: partner.last_name,
+      display_name: userDisplayName(partner),
+    },
     totals: {
       me_paid: mePaid,
       me_share: meShare,
