@@ -7,53 +7,81 @@ import i18n from '../i18n/config';
 
 const NotificationContext = createContext(undefined);
 
+const LS_NOTIFICATIONS = 'notifications';
+const LS_DISMISSED = 'dismissedNotifications';
+
+function parseNotificationsFromStorage() {
+  const saved = localStorage.getItem(LS_NOTIFICATIONS);
+  if (!saved) {
+    return [];
+  }
+  try {
+    return JSON.parse(saved).map(function(n) {
+      return { ...n, timestamp: new Date(n.timestamp) };
+    });
+  } catch (error) {
+    return [];
+  }
+}
+
+function parseDismissedIdsFromStorage() {
+  const saved = localStorage.getItem(LS_DISMISSED);
+  if (!saved) {
+    return new Set();
+  }
+  try {
+    return new Set(JSON.parse(saved));
+  } catch (error) {
+    return new Set();
+  }
+}
+
 /**
  * NotificationProvider component
  * @param {Object} props - Component props
  * @param {React.ReactNode} props.children - Child components
  */
 export function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
-  const [dismissedNotifications, setDismissedNotifications] = useState(new Set());
-  const dismissedNotificationsRef = useRef(new Set());
+  const [notifications, setNotifications] = useState(function() {
+    return parseNotificationsFromStorage();
+  });
+  const [dismissedNotifications, setDismissedNotifications] = useState(function() {
+    return parseDismissedIdsFromStorage();
+  });
+
+  /**
+   * Must match dismissedNotifications on every render so async checkBudgets always sees current suppressions
+   * (initial state is already loaded from localStorage — not empty until useEffect like before).
+   */
+  const dismissedNotificationsRef = useRef(null);
+  dismissedNotificationsRef.current = dismissedNotifications;
 
   useEffect(function() {
-    // Load notifications from localStorage
-    const saved = localStorage.getItem('notifications');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setNotifications(parsed.map(function(n) {
-          return { ...n, timestamp: new Date(n.timestamp) };
-        }));
-      } catch (error) {
-        // Ignore
+    function onStorage(event) {
+      if (event.key !== LS_NOTIFICATIONS && event.key !== LS_DISMISSED) {
+        return;
       }
-    }
-
-    // Load dismissed notifications from localStorage
-    const savedDismissed = localStorage.getItem('dismissedNotifications');
-    if (savedDismissed) {
-      try {
-        const parsed = JSON.parse(savedDismissed);
-        const dismissedSet = new Set(parsed);
-        setDismissedNotifications(dismissedSet);
-        dismissedNotificationsRef.current = dismissedSet;
-      } catch (error) {
-        // Ignore
+      if (event.storageArea !== localStorage) {
+        return;
       }
+      setNotifications(parseNotificationsFromStorage());
+      const nextDismissed = parseDismissedIdsFromStorage();
+      dismissedNotificationsRef.current = nextDismissed;
+      setDismissedNotifications(nextDismissed);
     }
+    window.addEventListener('storage', onStorage);
+    return function() {
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   useEffect(function() {
-    // Save notifications to localStorage
-    localStorage.setItem('notifications', JSON.stringify(notifications));
+    localStorage.setItem(LS_NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
 
   useEffect(function() {
-    // Save dismissed notifications to localStorage and update ref
     dismissedNotificationsRef.current = dismissedNotifications;
-    localStorage.setItem('dismissedNotifications', JSON.stringify(Array.from(dismissedNotifications)));
+    localStorage.setItem(LS_DISMISSED, JSON.stringify(Array.from(dismissedNotifications)));
   }, [dismissedNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -110,7 +138,9 @@ export function NotificationProvider({ children }) {
   };
 
   const checkBudgets = useCallback(async function(db) {
-    if (!db) return;
+    if (!db) {
+      return;
+    }
 
     try {
       const budgets = await db.getAllBudgets();
@@ -138,10 +168,10 @@ export function NotificationProvider({ children }) {
             newNotifications.push({
               id: `budget-exceeded-${budget.id}`,
               type: 'budget_exceeded',
-              message: i18n.t('notifications.budgetExceeded', { 
-                spent: spent.toFixed(2), 
-                currency: budget.currency, 
-                amount: budget.amount.toFixed(2) 
+              message: i18n.t('notifications.budgetExceeded', {
+                spent: spent.toFixed(2),
+                currency: budget.currency,
+                amount: budget.amount.toFixed(2),
               }),
               timestamp: new Date(),
               read: false,
@@ -160,10 +190,10 @@ export function NotificationProvider({ children }) {
         }
       }
 
-      // Add new notifications (avoid duplicates and dismissed ones)
       setNotifications(function(prev) {
         const existingIds = new Set(prev.map(n => n.id));
-        const toAdd = newNotifications.filter(n => !existingIds.has(n.id) && !dismissedNotificationsRef.current.has(n.id));
+        const dismissed = dismissedNotificationsRef.current;
+        const toAdd = newNotifications.filter(n => !existingIds.has(n.id) && !dismissed.has(n.id));
         return [...prev, ...toAdd];
       });
     } catch (error) {
@@ -199,4 +229,3 @@ export function useNotifications() {
   }
   return context;
 }
-
