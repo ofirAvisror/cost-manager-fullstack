@@ -20,7 +20,7 @@ import {
   FormControl
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { exportToCSV, exportToPDF } from '../../lib/exportHelpers';
+import { exportToCSV, exportToPDF, makeResolveOwner } from '../../lib/exportHelpers';
 import toast from 'react-hot-toast';
 
 /**
@@ -41,7 +41,14 @@ export default function ExportDialog({ open, onClose, db }) {
     const date = new Date();
     return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
   });
-  const [selectedColumns, setSelectedColumns] = useState(['date', 'category', 'description', 'amount', 'currency']);
+  const [selectedColumns, setSelectedColumns] = useState([
+    'date',
+    'category',
+    'description',
+    'amount',
+    'currency',
+    'owner',
+  ]);
   const [loading, setLoading] = useState(false);
 
   const columns = [
@@ -85,22 +92,50 @@ export default function ExportDialog({ open, onClose, db }) {
 
       const filename = `costs-export-${startDate.year}-${startDate.month}-${startDate.day}_to_${endDate.year}-${endDate.month}-${endDate.day}`;
 
+      let partnerStatus = null;
+      if (db && typeof db.getPartnerStatus === 'function') {
+        try {
+          partnerStatus = await db.getPartnerStatus();
+        } catch (partnerErr) {
+          partnerStatus = null;
+        }
+      }
+      let authUser = null;
+      try {
+        const rawAuth = localStorage.getItem('cm_auth');
+        if (rawAuth) {
+          const parsed = JSON.parse(rawAuth);
+          authUser = parsed && parsed.user ? parsed.user : null;
+        }
+      } catch (parseErr) {
+        authUser = null;
+      }
+      const resolveOwner = makeResolveOwner(partnerStatus, authUser);
+      const columnLabels = {
+        date: t('common.date'),
+        category: t('common.category'),
+        description: t('common.description'),
+        amount: t('common.amount'),
+        currency: t('common.currency'),
+        owner: t('common.expenseOwner'),
+      };
+
       if (exportFormat === 'csv') {
-        exportToCSV(costs, `${filename}.csv`);
+        exportToCSV(costs, `${filename}.csv`, {
+          columns: selectedColumns,
+          columnLabels,
+          resolveOwner,
+        });
         toast.success(t('messages.dataExportedCSV'));
       } else {
         await exportToPDF(costs, t('common.costManager'), `${filename}.pdf`, {
           columns: selectedColumns,
-          columnLabels: {
-            date: t('common.date'),
-            category: t('common.category'),
-            description: t('common.description'),
-            amount: t('common.amount'),
-            currency: t('common.currency'),
-          },
+          columnLabels,
+          resolveOwner,
           pdfStrings: {
             generatedPrefix: t('export.pdfGeneratedPrefix'),
             totalPrefix: t('export.pdfTotalPrefix'),
+            uncategorizedLabel: t('export.pdfUncategorized'),
           },
         });
         toast.success(t('messages.dataExportedPDF'));
@@ -191,6 +226,11 @@ export default function ExportDialog({ open, onClose, db }) {
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
             {t('common.selectColumns')}
           </Typography>
+          {exportFormat === 'pdf' ? (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              {t('export.pdfGroupedHint')}
+            </Typography>
+          ) : null}
           <FormGroup>
             {columns.map((column) => (
               <FormControlLabel

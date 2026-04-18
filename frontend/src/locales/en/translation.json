@@ -42,6 +42,7 @@
     "category": "Category",
     "description": "Description",
     "currency": "Currency",
+    "expenseOwner": "Assigned to",
     "sum": "Sum",
     "day": "Day",
     "month": "Month",
@@ -236,7 +237,9 @@
     "exporting": "Exporting...",
     "exportButton": "Export",
     "pdfGeneratedPrefix": "Generated: ",
-    "pdfTotalPrefix": "Total: "
+    "pdfTotalPrefix": "Total: ",
+    "pdfUncategorized": "Uncategorized",
+    "pdfGroupedHint": "The PDF is grouped by category; the category appears as each section title."
   },
   "auth": {
     "createAccount": "Create account",

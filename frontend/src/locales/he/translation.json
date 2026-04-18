@@ -42,6 +42,7 @@
     "category": "קטגוריה",
     "description": "תיאור",
     "currency": "מטבע",
+    "expenseOwner": "משויך ל",
     "sum": "סכום",
     "day": "יום",
     "month": "חודש",
@@ -236,7 +237,9 @@
     "exporting": "מייצא...",
     "exportButton": "ייצא",
     "pdfGeneratedPrefix": "נוצר: ",
-    "pdfTotalPrefix": "סה\"כ: "
+    "pdfTotalPrefix": "סה\"כ: ",
+    "pdfUncategorized": "ללא קטגוריה",
+    "pdfGroupedHint": "ה-PDF מסודר לפי קטגוריות; עמודת הקטגוריה מופיעה ככותרת קבוצה."
   },
   "auth": {
     "createAccount": "יצירת חשבון",
