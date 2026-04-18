@@ -129,6 +129,7 @@
  * @property {function(number, number?, string?): Promise<Budget|null>} getBudget
  * @property {function(Object): Promise<Budget>} setBudget
  * @property {function(): Promise<Budget[]>} getAllBudgets
+ * @property {function(string|number): Promise<void>} deleteBudget
  */
 
 

@@ -47,6 +47,8 @@ export default function BudgetManager({ db }) {
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [spentAmounts, setSpentAmounts] = useState({});
+  const [budgetToDelete, setBudgetToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(function() {
     if (db) {
@@ -143,6 +145,29 @@ export default function BudgetManager({ db }) {
     setOpenDialog(false);
   };
 
+  const handleConfirmDelete = async function() {
+    if (!db || !budgetToDelete) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      if (typeof db.deleteBudget !== 'function') {
+        throw new Error('deleteBudget not available');
+      }
+      await db.deleteBudget(budgetToDelete.id);
+      toast.success(t('messages.budgetDeleted'));
+      setBudgetToDelete(null);
+      loadBudgets();
+    } catch (error) {
+      toast.error(
+        t('messages.failedToDelete') +
+          (error instanceof Error ? ': ' + error.message : '')
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleSave = async function() {
     if (!db || !amount) {
       toast.error(t('messages.pleaseEnterAmount'));
@@ -236,6 +261,42 @@ export default function BudgetManager({ db }) {
           ))}
         </Grid>
       )}
+
+      <Dialog
+        open={Boolean(budgetToDelete)}
+        onClose={function () {
+          if (!deleting) {
+            setBudgetToDelete(null);
+          }
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{t('budget.deleteBudget')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {t('budget.deleteBudgetConfirm')}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={function () {
+              setBudgetToDelete(null);
+            }}
+            disabled={deleting}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleConfirmDelete}
+            disabled={deleting}
+          >
+            {t('budget.deleteBudget')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Budget Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>

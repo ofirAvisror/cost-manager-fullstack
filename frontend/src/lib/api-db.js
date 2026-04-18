@@ -491,6 +491,11 @@ export async function openCostsDB(getViewFilter) {
       }));
     },
 
+    async deleteBudget(budgetId) {
+      const id = encodeURIComponent(String(budgetId));
+      await apiRequest(`/api/budgets/${id}`, { method: 'DELETE' });
+    },
+
     async getSavingsGoals() {
       const params = new URLSearchParams({
         userid: String(getUserId()),
