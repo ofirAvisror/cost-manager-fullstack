@@ -137,6 +137,19 @@ export function NotificationProvider({ children }) {
     });
   };
 
+  function budgetIdFromNotificationId(notificationId) {
+    if (typeof notificationId !== 'string') {
+      return null;
+    }
+    if (notificationId.startsWith('budget-exceeded-')) {
+      return notificationId.slice('budget-exceeded-'.length);
+    }
+    if (notificationId.startsWith('budget-warning-')) {
+      return notificationId.slice('budget-warning-'.length);
+    }
+    return null;
+  }
+
   const checkBudgets = useCallback(async function(db) {
     if (!db) {
       return;
@@ -144,6 +157,11 @@ export function NotificationProvider({ children }) {
 
     try {
       const budgets = await db.getAllBudgets();
+      const validBudgetIds = new Set(
+        budgets.map(function (b) {
+          return String(b.id != null ? b.id : '');
+        })
+      );
       const newNotifications = [];
 
       for (const budget of budgets) {
@@ -191,10 +209,21 @@ export function NotificationProvider({ children }) {
       }
 
       setNotifications(function(prev) {
-        const existingIds = new Set(prev.map(n => n.id));
         const dismissed = dismissedNotificationsRef.current;
-        const toAdd = newNotifications.filter(n => !existingIds.has(n.id) && !dismissed.has(n.id));
-        return [...prev, ...toAdd];
+        const scoped = prev.filter(function (n) {
+          const bid = budgetIdFromNotificationId(n.id);
+          if (bid === null) {
+            return true;
+          }
+          return validBudgetIds.has(bid);
+        });
+        const existingIds = new Set(scoped.map(function (n) {
+          return n.id;
+        }));
+        const toAdd = newNotifications.filter(function (n) {
+          return !existingIds.has(n.id) && !dismissed.has(n.id);
+        });
+        return scoped.concat(toAdd);
       });
     } catch (error) {
       // Ignore
