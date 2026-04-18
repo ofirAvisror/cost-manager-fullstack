@@ -263,6 +263,9 @@ export default function BudgetManager({ db }) {
               <BudgetCard 
                 budget={budget} 
                 spent={spentAmounts[budget.id] || 0}
+                onDelete={function () {
+                  setBudgetToDelete(budget);
+                }}
               />
             </Grid>
           ))}
