@@ -51,19 +51,20 @@ export default function Sidebar({ open, onClose, currentView, onViewChange, part
   // Determine drawer anchor based on language direction
   const anchor = i18n.language === 'he' ? 'right' : 'left';
 
+  // Order: dashboard → add → report → partner → other tools → charts → settings
   const navItems = [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: <DashboardIcon /> },
     { id: 'add-cost', label: t('navigation.addCost'), icon: <AddCircleOutlineIcon /> },
-    { id: 'recurring', label: t('navigation.recurring'), icon: <RepeatIcon /> },
     { id: 'report', label: t('navigation.report'), icon: <AssessmentIcon /> },
-    { id: 'pie-chart', label: t('navigation.pieChart'), icon: <PieChartIcon /> },
-    { id: 'bar-chart', label: t('navigation.barChart'), icon: <BarChartIcon /> },
+    { id: 'partner', label: partnerNavLabel || t('navigation.partner'), icon: <PeopleIcon /> },
     { id: 'categories', label: t('navigation.categories'), icon: <CategoryIcon /> },
     { id: 'budget', label: t('navigation.budget'), icon: <AccountBalanceIcon /> },
     { id: 'savings-goals', label: t('navigation.savingsGoals'), icon: <SavingsIcon /> },
-    { id: 'partner', label: partnerNavLabel || t('navigation.partner'), icon: <PeopleIcon /> },
-    { id: 'filters', label: t('navigation.filters'), icon: <FilterListIcon /> },
+    { id: 'recurring', label: t('navigation.recurring'), icon: <RepeatIcon /> },
     { id: 'notifications', label: t('navigation.notifications'), icon: <NotificationsIcon /> },
+    { id: 'filters', label: t('navigation.filters'), icon: <FilterListIcon /> },
+    { id: 'pie-chart', label: t('navigation.pieChart'), icon: <PieChartIcon /> },
+    { id: 'bar-chart', label: t('navigation.barChart'), icon: <BarChartIcon /> },
     { id: 'settings', label: t('navigation.settings'), icon: <SettingsIcon /> },
   ];
 
