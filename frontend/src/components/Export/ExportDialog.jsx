@@ -89,7 +89,16 @@ export default function ExportDialog({ open, onClose, db }) {
         exportToCSV(costs, `${filename}.csv`);
         toast.success(t('messages.dataExportedCSV'));
       } else {
-        await exportToPDF(costs, t('common.costManager'), `${filename}.pdf`);
+        await exportToPDF(costs, t('common.costManager'), `${filename}.pdf`, {
+          columns: selectedColumns,
+          columnLabels: {
+            date: t('common.date'),
+            category: t('common.category'),
+            description: t('common.description'),
+            amount: t('common.amount'),
+            currency: t('common.currency'),
+          },
+        });
         toast.success(t('messages.dataExportedPDF'));
       }
 

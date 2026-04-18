@@ -393,7 +393,14 @@ export default function CategoriesManager({ db }) {
                 onClick={() => handleCategoryClick(category.name)}
               >
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      columnGap: 2,
+                    }}
+                  >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
                       <Box
                         sx={{
@@ -401,24 +408,37 @@ export default function CategoriesManager({ db }) {
                           height: 40,
                           borderRadius: 2,
                           flexShrink: 0,
-                          bgcolor: category.typeColor || category.color || '#6366f1',
+                          bgcolor: category.color || '#6366f1',
                         }}
                       />
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Box
+                        sx={{
+                          minWidth: 0,
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          flexWrap: 'wrap',
+                          columnGap: 2,
+                          rowGap: 0.5,
+                        }}
+                      >
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
                           {category.name}
                         </Typography>
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ fontWeight: 500, mt: 0.25 }}
+                          sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}
                           dir="ltr"
                         >
                           {formatCategoryExpenseTotalsLine(category.expenseTotalsByCurrency || emptyExpenseTotals()) ?? '—'}
                         </Typography>
                       </Box>
                     </Box>
-                    <Box onClick={(e) => e.stopPropagation()}>
+                    <Box
+                      onClick={(e) => e.stopPropagation()}
+                      sx={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: 0.5 }}
+                    >
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDialog(category)}
