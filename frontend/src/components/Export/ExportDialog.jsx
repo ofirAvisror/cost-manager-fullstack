@@ -89,7 +89,7 @@ export default function ExportDialog({ open, onClose, db }) {
         exportToCSV(costs, `${filename}.csv`);
         toast.success(t('messages.dataExportedCSV'));
       } else {
-        exportToPDF(costs, t('common.costManager'), `${filename}.pdf`);
+        await exportToPDF(costs, t('common.costManager'), `${filename}.pdf`);
         toast.success(t('messages.dataExportedPDF'));
       }
 

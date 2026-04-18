@@ -35,13 +35,32 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import toast from 'react-hot-toast';
 
+const EXPENSE_TOTAL_KEYS = ['ILS', 'USD', 'GBP', 'EURO'];
+
+function emptyExpenseTotals() {
+  return { USD: 0, ILS: 0, GBP: 0, EURO: 0 };
+}
+
+function formatCategoryExpenseTotalsLine(totals) {
+  const parts = [];
+  for (let i = 0; i < EXPENSE_TOTAL_KEYS.length; i++) {
+    const cur = EXPENSE_TOTAL_KEYS[i];
+    const n = totals[cur];
+    if (n > 0.0005 || n < -0.0005) {
+      parts.push(`${n.toFixed(2)} ${cur}`);
+    }
+  }
+  return parts.length ? parts.join(' · ') : null;
+}
+
 /**
  * CategoriesManager component
  * @param {Object} props - Component props
  * @param {Object|null} props.db - Database instance
  */
 export default function CategoriesManager({ db }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -107,6 +126,15 @@ export default function CategoriesManager({ db }) {
         const categoryTransactions = allCosts.filter(function(cost) {
           return cost.category === category.name;
         });
+
+        const expenseTotalsByCurrency = emptyExpenseTotals();
+        categoryTransactions.forEach(function(transaction) {
+          const type = transaction.type || 'expense';
+          if (type === 'expense' && expenseTotalsByCurrency[transaction.currency] != null) {
+            expenseTotalsByCurrency[transaction.currency] += transaction.sum;
+          }
+        });
+        category.expenseTotalsByCurrency = expenseTotalsByCurrency;
         
         if (categoryTransactions.length > 0) {
           // Count transaction types
@@ -327,7 +355,7 @@ export default function CategoriesManager({ db }) {
         </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          {...(isRtl ? { endIcon: <AddIcon /> } : { startIcon: <AddIcon /> })}
           onClick={() => handleOpenDialog()}
           sx={{
             background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -366,18 +394,29 @@ export default function CategoriesManager({ db }) {
               >
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
                       <Box
                         sx={{
                           width: 40,
                           height: 40,
                           borderRadius: 2,
+                          flexShrink: 0,
                           bgcolor: category.typeColor || category.color || '#6366f1',
                         }}
                       />
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {category.name}
-                      </Typography>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {category.name}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontWeight: 500, mt: 0.25 }}
+                          dir="ltr"
+                        >
+                          {formatCategoryExpenseTotalsLine(category.expenseTotalsByCurrency || emptyExpenseTotals()) ?? '—'}
+                        </Typography>
+                      </Box>
                     </Box>
                     <Box onClick={(e) => e.stopPropagation()}>
                       <IconButton

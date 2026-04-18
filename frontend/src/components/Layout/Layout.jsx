@@ -7,7 +7,6 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Header from './Header';
 import Sidebar, { drawerWidth } from './Sidebar';
-import { mainBelowAppBar } from './belowAppBarSx';
 
 /**
  * Layout component
@@ -43,7 +42,16 @@ export default function Layout({
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        position: 'relative',
+        maxWidth: '100vw',
+        overflowX: 'hidden',
+      }}
+    >
       <Header 
         onMenuClick={handleMenuClick} 
         notificationCount={notificationCount}
@@ -51,46 +59,56 @@ export default function Layout({
         onLogout={onLogout}
         partnerNavLabel={partnerNavLabel}
       />
-      
-      {/* Sidebar - will be positioned based on anchor prop */}
-      <Sidebar
-        key={`sidebar-${i18n.language}`} // Force re-render when language changes
-        open={sidebarOpen}
-        onClose={handleSidebarClose}
-        currentView={currentView}
-        onViewChange={onViewChange}
-        partnerNavLabel={partnerNavLabel}
-      />
-      
-      {/* Main content */}
+      <Box sx={theme.mixins.toolbar} aria-hidden />
       <Box
-        component="main"
         sx={{
-          flexGrow: 1,
-          flexShrink: 1,
+          display: 'flex',
+          flex: '1 1 auto',
+          minHeight: 0,
           minWidth: 0,
+          width: '100%',
           maxWidth: '100%',
           overflowX: 'hidden',
-          p: { xs: 1.5, sm: 2, md: 3 },
-          width: { 
-            md: sidebarOpen 
-              ? `calc(100% - ${drawerWidth}px)` 
-              : '100%' 
-          },
-          ...(isRTL ? {
-            marginRight: 0,
-          } : {
-            marginLeft: 0,
-          }),
-          ...mainBelowAppBar(theme),
-          bgcolor: 'background.default',
-          transition: theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
         }}
       >
-        {children}
+        <Sidebar
+          key={`sidebar-${i18n.language}`}
+          open={sidebarOpen}
+          onClose={handleSidebarClose}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          partnerNavLabel={partnerNavLabel}
+        />
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            flexShrink: 1,
+            minWidth: 0,
+            minHeight: 0,
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            p: { xs: 1.5, sm: 2, md: 3 },
+            width: { 
+              md: sidebarOpen 
+                ? `calc(100% - ${drawerWidth}px)` 
+                : '100%' 
+            },
+            ...(isRTL ? {
+              marginRight: 0,
+            } : {
+              marginLeft: 0,
+            }),
+            bgcolor: 'background.default',
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );
