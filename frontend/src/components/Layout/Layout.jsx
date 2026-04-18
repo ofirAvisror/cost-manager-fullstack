@@ -7,6 +7,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Header from './Header';
 import Sidebar, { drawerWidth } from './Sidebar';
+import HouseholdViewSelect from './HouseholdViewSelect';
 
 /**
  * Layout component
@@ -107,6 +108,7 @@ export default function Layout({
             }),
           }}
         >
+          <HouseholdViewSelect />
           {children}
         </Box>
       </Box>

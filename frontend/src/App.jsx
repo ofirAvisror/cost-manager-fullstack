@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import './i18n/config';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider, useNotifications } from './contexts/NotificationContext';
+import { HouseholdViewProvider, useHouseholdView } from './contexts/HouseholdViewContext';
 import { openCostsDB } from './lib/api-db';
 import Layout from './components/Layout/Layout';
 import AddCostForm from './components/AddCostForm';
@@ -234,6 +235,7 @@ function AuthScreen({ onAuthenticated }) {
  */
 function AppInner({ auth, onLogout }) {
   const { t } = useTranslation();
+  const { getViewFilter, viewScope } = useHouseholdView();
   const [db, setDb] = useState(null);
   const [dbError, setDbError] = useState('');
   const [currentView, setCurrentView] = useState('dashboard');
@@ -246,7 +248,7 @@ function AppInner({ auth, onLogout }) {
   useEffect(function() {
     async function initDB() {
       try {
-        const database = await openCostsDB();
+        const database = await openCostsDB(getViewFilter);
         if (database && typeof database.processRecurringDue === 'function') {
           try {
             await database.processRecurringDue();
@@ -262,7 +264,7 @@ function AppInner({ auth, onLogout }) {
     }
 
     initDB();
-  }, [t]);
+  }, [t, getViewFilter]);
 
   useEffect(function() {
     // Check budgets periodically
@@ -276,7 +278,7 @@ function AppInner({ auth, onLogout }) {
         clearInterval(interval);
       };
     }
-  }, [db, checkBudgets]);
+  }, [db, checkBudgets, viewScope]);
 
   useEffect(function loadPartnerNavLabel() {
     let cancelled = false;
@@ -409,13 +411,15 @@ function App() {
 
   return (
     <ThemeProvider>
-      <NotificationProvider>
-        {auth ? (
-          <AppInner auth={auth} onLogout={handleLogout} />
-        ) : (
-          <AuthScreen onAuthenticated={setAuth} />
-        )}
-      </NotificationProvider>
+      <HouseholdViewProvider>
+        <NotificationProvider>
+          {auth ? (
+            <AppInner auth={auth} onLogout={handleLogout} />
+          ) : (
+            <AuthScreen onAuthenticated={setAuth} />
+          )}
+        </NotificationProvider>
+      </HouseholdViewProvider>
     </ThemeProvider>
   );
 }

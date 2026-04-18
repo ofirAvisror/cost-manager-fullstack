@@ -2,7 +2,7 @@
  * BarChartView.jsx - Component for displaying bar chart of monthly costs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -20,6 +20,7 @@ import {
   Fade
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../contexts/HouseholdViewContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getBarChartData } from '../lib/chartHelpers';
@@ -33,6 +34,7 @@ import { motion } from 'framer-motion';
  */
 export default function BarChartView({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const { mode } = useTheme();
   const currentDate = new Date();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -46,6 +48,14 @@ export default function BarChartView({ db }) {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(
+    function clearChartOnScopeChange() {
+      setChartData([]);
+      setErrorMessage('');
+    },
+    [householdView]
+  );
 
   /**
    * Fetches and displays the bar chart

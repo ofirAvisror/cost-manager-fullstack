@@ -160,7 +160,17 @@ function deserializeCost(cost) {
   };
 }
 
-export async function openCostsDB() {
+export async function openCostsDB(getViewFilter) {
+  const resolveVF =
+    typeof getViewFilter === 'function' ? getViewFilter : function () {
+      return {};
+    };
+
+  function viewScopeParam() {
+    const vf = resolveVF();
+    return vf.viewScope || 'household';
+  }
+
   const dbObject = {
     async addCost(cost) {
       const payload = {
@@ -179,7 +189,11 @@ export async function openCostsDB() {
     },
 
     async getAllCosts() {
-      const items = await apiRequest(`/api/costs?userid=${getUserId()}&includePartner=true`);
+      const params = new URLSearchParams({
+        userid: String(getUserId()),
+        viewScope: viewScopeParam(),
+      });
+      const items = await apiRequest(`/api/costs?${params.toString()}`);
       return (items || []).map(deserializeCost);
     },
 
@@ -191,7 +205,7 @@ export async function openCostsDB() {
       const params = new URLSearchParams({
         userid: String(getUserId()),
         schedulesOnly: 'true',
-        includePartner: 'true',
+        viewScope: viewScopeParam(),
       });
       const items = await apiRequest(`/api/costs?${params.toString()}`);
       return (items || []).map(deserializeCost);
@@ -202,8 +216,9 @@ export async function openCostsDB() {
     },
 
     async getReport(year, month, currency) {
+      const vs = encodeURIComponent(viewScopeParam());
       const report = await apiRequest(
-        `/api/report?id=${getUserId()}&year=${year}&month=${month}`
+        `/api/report?id=${getUserId()}&year=${year}&month=${month}&viewScope=${vs}`
       );
 
       function flattenCategoryBuckets(buckets, type) {
@@ -363,12 +378,44 @@ export async function openCostsDB() {
     },
 
     async getCategories() {
-      const categories = await apiRequest(`/api/categories?userid=${getUserId()}`);
-      return (categories || []).map((item) => ({
-        id: item._id || item.id,
-        name: item.name,
-        color: item.color || '#6366f1',
-      }));
+      const vf = resolveVF();
+      const vs = vf.viewScope || 'household';
+      const selfId = getUserId();
+      const pid = vf.partnerId;
+
+      function mapRows(rows) {
+        return (rows || []).map((item) => ({
+          id: item._id || item.id,
+          name: item.name,
+          color: item.color || '#6366f1',
+        }));
+      }
+
+      async function fetchForUser(uid) {
+        const rows = await apiRequest(`/api/categories?userid=${uid}`);
+        return mapRows(rows);
+      }
+
+      if (vs === 'partner' && Number.isFinite(pid)) {
+        return fetchForUser(pid);
+      }
+      if (vs === 'self' || !Number.isFinite(pid)) {
+        return fetchForUser(selfId);
+      }
+
+      const [mine, theirs] = await Promise.all([fetchForUser(selfId), fetchForUser(pid)]);
+      const byName = new Map();
+      mine.forEach(function (c) {
+        byName.set(c.name, c);
+      });
+      theirs.forEach(function (c) {
+        if (!byName.has(c.name)) {
+          byName.set(c.name, c);
+        }
+      });
+      return Array.from(byName.values()).sort(function (a, b) {
+        return a.name.localeCompare(b.name);
+      });
     },
 
     async addCategory(category) {

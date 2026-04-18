@@ -1,18 +1,18 @@
 const Cost = require('../models/Cost');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
-const { householdOwnerIdsFromUser, resolveHouseholdOwnerIds } = require('../utils/household');
+const { resolveOwnerIdsForView, normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
 
 /**
  * Get overall financial summary for a user
  */
-async function getSummary(userid) {
-  const user = await User.findOne({ id: parseInt(userid) });
+async function getSummary(userid, viewScope = 'household') {
+  const user = await User.findOne({ id: parseInt(userid, 10) });
   if (!user) {
     throw new Error('User not found');
   }
-
-  const ownerIds = householdOwnerIdsFromUser(user);
+  const scope = normalizeViewScope(viewScope);
+  const ownerIds = ownerUserIdsForView(user, scope);
   const costs = await Cost.find({ userid: { $in: ownerIds }, schedule_only: { $ne: true } });
 
   const totalIncome = costs
@@ -89,8 +89,9 @@ async function getTrends(userid, year) {
 /**
  * Get category breakdown
  */
-async function getCategories(userid, type, year, month) {
-  const ownerIds = await resolveHouseholdOwnerIds(userid);
+async function getCategories(userid, type, year, month, viewScope = 'household') {
+  const scope = normalizeViewScope(viewScope);
+  const ownerIds = await resolveOwnerIdsForView(userid, scope);
   const query = { userid: { $in: ownerIds }, schedule_only: { $ne: true } };
   if (type) {
     query.type = type.toLowerCase();
@@ -137,7 +138,9 @@ async function getCategories(userid, type, year, month) {
 /**
  * Get month-over-month comparison
  */
-async function getComparison(userid, year, month) {
+async function getComparison(userid, year, month, viewScope = 'household') {
+  const scope = normalizeViewScope(viewScope);
+  const ownerIds = await resolveOwnerIdsForView(userid, scope);
   const yearNum = parseInt(year);
   const monthNum = parseInt(month);
 
@@ -152,13 +155,13 @@ async function getComparison(userid, year, month) {
   const prevEnd = new Date(prevYear, prevMonth, 0, 23, 59, 59);
 
   const currentCosts = await Cost.find({
-    userid: parseInt(userid),
+    userid: { $in: ownerIds },
     schedule_only: { $ne: true },
     created_at: { $gte: currentStart, $lte: currentEnd }
   });
 
   const prevCosts = await Cost.find({
-    userid: parseInt(userid),
+    userid: { $in: ownerIds },
     schedule_only: { $ne: true },
     created_at: { $gte: prevStart, $lte: prevEnd }
   });
@@ -207,12 +210,12 @@ async function getComparison(userid, year, month) {
 /**
  * Get yearly report
  */
-async function getYearly(userid, year) {
+async function getYearly(userid, year, viewScope = 'household') {
+  const scope = normalizeViewScope(viewScope);
+  const ownerIds = await resolveOwnerIdsForView(userid, scope);
   const yearNum = parseInt(year);
   const startDate = new Date(yearNum, 0, 1);
   const endDate = new Date(yearNum, 11, 31, 23, 59, 59);
-
-  const ownerIds = await resolveHouseholdOwnerIds(userid);
 
   const costs = await Cost.find({
     userid: { $in: ownerIds },

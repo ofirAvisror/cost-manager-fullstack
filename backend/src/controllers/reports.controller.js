@@ -2,13 +2,15 @@ const reportService = require('../services/report.service');
 const userService = require('../services/user.service');
 const { validateMonth, validateYear } = require('../utils/validators');
 const { logger } = require('../config/logger');
+const { normalizeViewScope } = require('../utils/household');
 
 /**
  * Get report for a specific month/year
  */
 async function getReport(req, res) {
   try {
-    const { id, year, month } = req.query;
+    const { id, year, month, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     // Validate required params
     if (!id || !year || !month) {
@@ -40,7 +42,7 @@ async function getReport(req, res) {
     // Verify user exists
     await userService.getUserById(userIdNum);
 
-    const reportData = await reportService.getReport(userIdNum, yearNum, monthNum);
+    const reportData = await reportService.getReport(userIdNum, yearNum, monthNum, viewScope);
     res.json(reportData);
   } catch (error) {
     logger.error('Error fetching report:', error.message);

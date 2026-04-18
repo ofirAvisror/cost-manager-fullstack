@@ -215,9 +215,10 @@ function drawHebrewPrefixThenLatin(doc, xMm, yMm, hebrewPrefix, latinSuffix) {
  * @param {object} cost
  * @param {string} columnId
  * @param {(id: number|string|null|undefined) => string} resolveOwner
+ * @param {string} [sharedOwnerLabel] - shown in owner column when cost.isShared (e.g. "זוגי")
  * @returns {string}
  */
-function cellForColumn(cost, columnId, resolveOwner) {
+function cellForColumn(cost, columnId, resolveOwner, sharedOwnerLabel) {
   switch (columnId) {
     case 'date': {
       const d = cost && cost.date;
@@ -235,6 +236,9 @@ function cellForColumn(cost, columnId, resolveOwner) {
     case 'currency':
       return cost.currency != null ? String(cost.currency) : '';
     case 'owner':
+      if (cost && cost.isShared && sharedOwnerLabel) {
+        return textForPdfLtrDraw(sharedOwnerLabel);
+      }
       return textForPdfLtrDraw(resolveOwner(ownerIdForCost(cost)));
     default:
       return '';
@@ -245,9 +249,10 @@ function cellForColumn(cost, columnId, resolveOwner) {
  * @param {object} cost
  * @param {string} columnId
  * @param {(id: number|string|null|undefined) => string} resolveOwner
+ * @param {string} [sharedOwnerLabel]
  * @returns {string}
  */
-function csvCellForColumn(cost, columnId, resolveOwner) {
+function csvCellForColumn(cost, columnId, resolveOwner, sharedOwnerLabel) {
   switch (columnId) {
     case 'date': {
       const d = cost && cost.date;
@@ -265,6 +270,9 @@ function csvCellForColumn(cost, columnId, resolveOwner) {
     case 'currency':
       return cost.currency != null ? String(cost.currency) : '';
     case 'owner':
+      if (cost && cost.isShared && sharedOwnerLabel) {
+        return sharedOwnerLabel;
+      }
       return resolveOwner(ownerIdForCost(cost));
     default:
       return '';
@@ -276,6 +284,7 @@ function csvCellForColumn(cost, columnId, resolveOwner) {
  * @property {string[]} [columns]
  * @property {Record<string, string>} [columnLabels]
  * @property {(id: number|string|null|undefined) => string} [resolveOwner]
+ * @property {string} [sharedOwnerLabel] - label for shared (couple) expenses in owner column
  */
 
 /**
@@ -293,13 +302,14 @@ export function exportToCSV(costs, filename = 'costs-export.csv', options) {
   const labels = opts.columnLabels || {};
   const resolveOwner =
     typeof opts.resolveOwner === 'function' ? opts.resolveOwner : function() { return ''; };
+  const sharedOwnerLabel = opts.sharedOwnerLabel != null ? String(opts.sharedOwnerLabel) : '';
 
   const headers = rawIds.map(function(id) {
     return labels[id] || DEFAULT_COLUMN_LABELS[id] || id;
   });
   const rows = costs.map(function(cost) {
     return rawIds.map(function(id) {
-      return csvCellForColumn(cost, id, resolveOwner);
+      return csvCellForColumn(cost, id, resolveOwner, sharedOwnerLabel);
     });
   });
 
@@ -337,6 +347,7 @@ export function exportToCSV(costs, filename = 'costs-export.csv', options) {
  * @property {Record<string, string>} [columnLabels] - i18n labels per column id
  * @property {{ generatedPrefix?: string, totalPrefix?: string, uncategorizedLabel?: string }} [pdfStrings]
  * @property {(id: number|string|null|undefined) => string} [resolveOwner] - required for owner column text
+ * @property {string} [sharedOwnerLabel] - label when cost.isShared (e.g. "זוגי")
  */
 
 /**
@@ -361,6 +372,7 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
     pdfStrings.uncategorizedLabel != null ? pdfStrings.uncategorizedLabel : '—';
   const resolveOwner =
     typeof opts.resolveOwner === 'function' ? opts.resolveOwner : function() { return '—'; };
+  const sharedOwnerLabel = opts.sharedOwnerLabel != null ? String(opts.sharedOwnerLabel) : '';
 
   const margin = 14;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -465,7 +477,7 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
 
     const tableData = catCosts.map(function(cost) {
       return bodyColumnIds.map(function(id) {
-        return cellForColumn(cost, id, resolveOwner);
+        return cellForColumn(cost, id, resolveOwner, sharedOwnerLabel);
       });
     });
 

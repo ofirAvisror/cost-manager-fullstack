@@ -22,6 +22,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import AddIcon from '@mui/icons-material/Add';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BudgetCard from './BudgetCard';
@@ -34,6 +35,7 @@ import toast from 'react-hot-toast';
  */
 export default function BudgetManager({ db }) {
   const { t } = useTranslation();
+  const { viewScope, partnerId } = useHouseholdView();
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -52,14 +54,14 @@ export default function BudgetManager({ db }) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }, [db, viewScope, partnerId]);
 
   useEffect(function() {
     if (db && budgets.length > 0) {
       loadSpentAmounts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, budgets]);
+  }, [db, budgets, viewScope, partnerId]);
 
   const loadBudgets = async function() {
     if (!db) return;

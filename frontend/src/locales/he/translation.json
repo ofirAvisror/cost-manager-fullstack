@@ -14,6 +14,12 @@
     "savingsGoals": "יעדי חסכונות",
     "recurring": "חוזרות"
   },
+  "householdView": {
+    "label": "תצוגה",
+    "household": "זוג",
+    "self": "אני",
+    "partner": "בן/בת הזוג"
+  },
   "common": {
     "costManager": "מנהל הוצאות",
     "manageExpenses": "נהל את ההוצאות שלך",
@@ -239,7 +245,8 @@
     "pdfGeneratedPrefix": "נוצר: ",
     "pdfTotalPrefix": "סה\"כ: ",
     "pdfUncategorized": "ללא קטגוריה",
-    "pdfGroupedHint": "ה-PDF מסודר לפי קטגוריות; עמודת הקטגוריה מופיעה ככותרת קבוצה."
+    "pdfGroupedHint": "ה-PDF מסודר לפי קטגוריות; עמודת הקטגוריה מופיעה ככותרת קבוצה.",
+    "expenseOwnerShared": "זוגי"
   },
   "auth": {
     "createAccount": "יצירת חשבון",

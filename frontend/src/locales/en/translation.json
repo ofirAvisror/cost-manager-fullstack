@@ -14,6 +14,12 @@
     "savingsGoals": "Savings Goals",
     "recurring": "Recurring"
   },
+  "householdView": {
+    "label": "View",
+    "household": "Couple",
+    "self": "Me",
+    "partner": "Partner"
+  },
   "common": {
     "costManager": "Cost Manager",
     "manageExpenses": "Manage your expenses",
@@ -239,7 +245,8 @@
     "pdfGeneratedPrefix": "Generated: ",
     "pdfTotalPrefix": "Total: ",
     "pdfUncategorized": "Uncategorized",
-    "pdfGroupedHint": "The PDF is grouped by category; the category appears as each section title."
+    "pdfGroupedHint": "The PDF is grouped by category; the category appears as each section title.",
+    "expenseOwnerShared": "Couple (shared)"
   },
   "auth": {
     "createAccount": "Create account",

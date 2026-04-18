@@ -1,13 +1,15 @@
 const analyticsService = require('../services/analytics.service');
 const { validateMonth, validateYear } = require('../utils/validators');
 const { logger } = require('../config/logger');
+const { normalizeViewScope } = require('../utils/household');
 
 /**
  * Get analytics summary
  */
 async function getSummary(req, res) {
   try {
-    const { userid } = req.query;
+    const { userid, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid) {
       return res.status(400).json({ 
@@ -16,7 +18,7 @@ async function getSummary(req, res) {
       });
     }
 
-    const summary = await analyticsService.getSummary(userid);
+    const summary = await analyticsService.getSummary(userid, viewScope);
     res.json(summary);
   } catch (error) {
     logger.error('Error fetching analytics summary:', error.message);
@@ -40,7 +42,8 @@ async function getSummary(req, res) {
  */
 async function getTrends(req, res) {
   try {
-    const { userid, year } = req.query;
+    const { userid, year, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid) {
       return res.status(400).json({ 
@@ -49,7 +52,7 @@ async function getTrends(req, res) {
       });
     }
 
-    const trends = await analyticsService.getTrends(userid, year);
+    const trends = await analyticsService.getTrends(userid, year, viewScope);
     res.json(trends);
   } catch (error) {
     logger.error('Error fetching analytics trends:', error.message);
@@ -65,7 +68,8 @@ async function getTrends(req, res) {
  */
 async function getCategories(req, res) {
   try {
-    const { userid, type, year, month } = req.query;
+    const { userid, type, year, month, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid) {
       return res.status(400).json({ 
@@ -74,7 +78,7 @@ async function getCategories(req, res) {
       });
     }
 
-    const categories = await analyticsService.getCategories(userid, type, year, month);
+    const categories = await analyticsService.getCategories(userid, type, year, month, viewScope);
     res.json(categories);
   } catch (error) {
     logger.error('Error fetching analytics categories:', error.message);
@@ -90,7 +94,8 @@ async function getCategories(req, res) {
  */
 async function getComparison(req, res) {
   try {
-    const { userid, year, month } = req.query;
+    const { userid, year, month, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid || !year || !month) {
       return res.status(400).json({ 
@@ -106,7 +111,7 @@ async function getComparison(req, res) {
       });
     }
 
-    const comparison = await analyticsService.getComparison(userid, year, month);
+    const comparison = await analyticsService.getComparison(userid, year, month, viewScope);
     res.json(comparison);
   } catch (error) {
     logger.error('Error fetching analytics comparison:', error.message);
@@ -122,7 +127,8 @@ async function getComparison(req, res) {
  */
 async function getYearly(req, res) {
   try {
-    const { userid, year } = req.query;
+    const { userid, year, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid || !year) {
       return res.status(400).json({ 
@@ -138,7 +144,7 @@ async function getYearly(req, res) {
       });
     }
 
-    const yearly = await analyticsService.getYearly(userid, year);
+    const yearly = await analyticsService.getYearly(userid, year, viewScope);
     res.json(yearly);
   } catch (error) {
     logger.error('Error fetching yearly analytics:', error.message);

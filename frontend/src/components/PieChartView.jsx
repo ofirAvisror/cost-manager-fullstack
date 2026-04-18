@@ -2,7 +2,7 @@
  * PieChartView.jsx - Component for displaying pie chart of costs by category
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -20,6 +20,7 @@ import {
   Fade
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../contexts/HouseholdViewContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { getPieChartData } from '../lib/chartHelpers';
 import { motion } from 'framer-motion';
@@ -32,12 +33,21 @@ import { motion } from 'framer-motion';
  */
 export default function PieChartView({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [currency, setCurrency] = useState('ILS');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(
+    function clearChartOnScopeChange() {
+      setChartData([]);
+      setErrorMessage('');
+    },
+    [householdView]
+  );
 
   /**
    * Colors for pie chart segments

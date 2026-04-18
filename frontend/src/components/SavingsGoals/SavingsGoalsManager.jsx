@@ -28,6 +28,7 @@ import {
   Divider
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -42,6 +43,7 @@ import toast from 'react-hot-toast';
  */
 export default function SavingsGoalsManager({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -120,7 +122,7 @@ export default function SavingsGoalsManager({ db }) {
       loadGoals();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }, [db, householdView]);
 
   const handleOpenDialog = function(goal) {
     if (goal) {

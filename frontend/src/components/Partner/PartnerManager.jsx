@@ -11,9 +11,11 @@ import {
 } from '@mui/material';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 
 export default function PartnerManager({ db }) {
   const { t } = useTranslation();
+  const { refreshPartner } = useHouseholdView();
   const [partnerEmail, setPartnerEmail] = useState('');
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,7 @@ export default function PartnerManager({ db }) {
       toast.success(t('partner.messages.requestSent'));
       setPartnerEmail('');
       await loadStatus();
+      await refreshPartner();
     } catch (error) {
       toast.error(error.message || t('partner.messages.failedSendingRequest'));
     } finally {
@@ -57,6 +60,7 @@ export default function PartnerManager({ db }) {
       await db.respondPartner(action);
       toast.success(action === 'accept' ? t('partner.messages.requestAccepted') : t('partner.messages.requestRejected'));
       await loadStatus();
+      await refreshPartner();
     } catch (error) {
       toast.error(error.message || t('partner.messages.failedHandlingRequest'));
     } finally {

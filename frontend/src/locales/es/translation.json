@@ -14,6 +14,12 @@
     "savingsGoals": "Objetivos de Ahorro",
     "recurring": "Recurrentes"
   },
+  "householdView": {
+    "label": "Vista",
+    "household": "Pareja",
+    "self": "Yo",
+    "partner": "Pareja (otro)"
+  },
   "common": {
     "costManager": "Gestor de Gastos",
     "manageExpenses": "Gestiona tus gastos",
@@ -239,7 +245,8 @@
     "pdfGeneratedPrefix": "Generado: ",
     "pdfTotalPrefix": "Total: ",
     "pdfUncategorized": "Sin categoría",
-    "pdfGroupedHint": "El PDF está agrupado por categoría; el nombre aparece como título de cada sección."
+    "pdfGroupedHint": "El PDF está agrupado por categoría; el nombre aparece como título de cada sección.",
+    "expenseOwnerShared": "Pareja (compartido)"
   },
   "auth": {
     "createAccount": "Crear cuenta",

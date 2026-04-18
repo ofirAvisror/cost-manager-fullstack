@@ -111,6 +111,7 @@ export default function ExportDialog({ open, onClose, db }) {
         authUser = null;
       }
       const resolveOwner = makeResolveOwner(partnerStatus, authUser);
+      const sharedOwnerLabel = t('export.expenseOwnerShared');
       const columnLabels = {
         date: t('common.date'),
         category: t('common.category'),
@@ -132,6 +133,7 @@ export default function ExportDialog({ open, onClose, db }) {
           columns: selectedColumns,
           columnLabels,
           resolveOwner,
+          sharedOwnerLabel,
           pdfStrings: {
             generatedPrefix: t('export.pdfGeneratedPrefix'),
             totalPrefix: t('export.pdfTotalPrefix'),

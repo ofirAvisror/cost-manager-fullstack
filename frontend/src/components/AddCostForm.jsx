@@ -21,6 +21,7 @@ import {
   Alert
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../contexts/HouseholdViewContext';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 
@@ -62,6 +63,7 @@ const costFormSchema = z.object({
 
 export default function AddCostForm({ db }) {
   const { t } = useTranslation();
+  const { viewScope, partnerId } = useHouseholdView();
   const [sum, setSum] = useState('');
   const [currency, setCurrency] = useState('ILS');
   const [category, setCategory] = useState('');
@@ -120,7 +122,7 @@ export default function AddCostForm({ db }) {
     }
 
     loadCategories();
-  }, [db]);
+  }, [db, viewScope, partnerId]);
 
   useEffect(function() {
     async function loadPartnerStatus() {

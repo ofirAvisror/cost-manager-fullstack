@@ -29,6 +29,7 @@ import {
   Divider
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -60,6 +61,7 @@ function formatCategoryExpenseTotalsLine(totals) {
  */
 export default function CategoriesManager({ db }) {
   const { t, i18n } = useTranslation();
+  const { viewScope, partnerId } = useHouseholdView();
   const isRtl = i18n.dir() === 'rtl';
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function CategoriesManager({ db }) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }, [db, viewScope, partnerId]);
 
   const loadCategories = async function() {
     if (!db) return;

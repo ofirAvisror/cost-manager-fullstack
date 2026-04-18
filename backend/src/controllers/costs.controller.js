@@ -1,6 +1,8 @@
 const costService = require('../services/cost.service');
 const { validateCostType, validateCostCategoryLabel, validateDate, validatePositiveNumber } = require('../utils/validators');
 const { logger } = require('../config/logger');
+const User = require('../models/User');
+const { normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
 
 /**
  * Create a new cost
@@ -143,13 +145,25 @@ async function getCosts(req, res) {
       });
     }
 
-    let userIdsToUse = [userIdToUse];
-    if ((includePartner === 'true' || includePartner === true) && req.user?.id) {
-      const User = require('../models/User');
+    const hasExplicitScope = req.query.viewScope !== undefined && req.query.viewScope !== '';
+    let viewScope = hasExplicitScope
+      ? normalizeViewScope(req.query.viewScope)
+      : (includePartner === 'true' || includePartner === true ? 'household' : 'self');
+
+    let userIdsToUse;
+    if (req.user?.id) {
       const me = await User.findOne({ id: req.user.id });
-      if (me?.partner_status === 'connected' && me.partner_id) {
-        userIdsToUse = [req.user.id, me.partner_id];
+      if (!me) {
+        return res.status(401).json({
+          id: 'UNAUTHORIZED',
+          message: 'User not found',
+        });
       }
+      userIdsToUse = ownerUserIdsForView(me, viewScope);
+    } else {
+      const uid = parseInt(userIdToUse, 10);
+      const u = await User.findOne({ id: uid });
+      userIdsToUse = u ? ownerUserIdsForView(u, viewScope) : [uid];
     }
     
     const costs = await costService.getCosts({

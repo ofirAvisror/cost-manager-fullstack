@@ -25,6 +25,7 @@ import {
   TableRow
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import toast from 'react-hot-toast';
@@ -36,6 +37,7 @@ import toast from 'react-hot-toast';
  */
 export default function AdvancedFilters({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const [startDate, setStartDate] = useState(function() {
     const date = new Date();
     return { year: date.getFullYear(), month: date.getMonth() + 1, day: 1 };
@@ -57,7 +59,7 @@ export default function AdvancedFilters({ db }) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }, [db, householdView]);
 
   const loadCategories = async function() {
     if (!db) return;

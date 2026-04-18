@@ -15,11 +15,13 @@ import {
 } from '@mui/material';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 export default function RecurringSchedulesManager({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,7 @@ export default function RecurringSchedulesManager({ db }) {
 
   useEffect(function() {
     load();
-  }, [load]);
+  }, [load, householdView]);
 
   const handleStop = async function(id) {
     if (!db || typeof db.deleteRecurringSchedule !== 'function') return;

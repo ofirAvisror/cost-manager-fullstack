@@ -13,6 +13,7 @@ import {
   Button
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../../contexts/HouseholdViewContext';
 import StatCard from './StatCard';
 import toast from 'react-hot-toast';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -37,6 +38,7 @@ function toSafeNumber(value, fallback = 0) {
  */
 export default function Dashboard({ db, onViewChange }) {
   const { t } = useTranslation();
+  const { viewScope, partnerId } = useHouseholdView();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
@@ -71,7 +73,7 @@ export default function Dashboard({ db, onViewChange }) {
     }
 
     loadStats();
-  }, [db, currentYear, currentMonth, currency, t]);
+  }, [db, currentYear, currentMonth, currency, t, viewScope, partnerId]);
 
   if (!db) {
     return (

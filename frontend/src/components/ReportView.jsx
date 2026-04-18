@@ -2,7 +2,7 @@
  * ReportView.jsx - Component for displaying detailed monthly reports
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -25,6 +25,7 @@ import {
   Fade
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useHouseholdView } from '../contexts/HouseholdViewContext';
 import ExportDialog from './Export/ExportDialog';
 import toast from 'react-hot-toast';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -37,12 +38,20 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
  */
 export default function ReportView({ db }) {
   const { t } = useTranslation();
+  const householdView = useHouseholdView();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [currency, setCurrency] = useState('ILS');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  useEffect(
+    function resetReportOnScopeChange() {
+      setReport(null);
+    },
+    [householdView]
+  );
 
   /**
    * Fetches and displays the report

@@ -2,7 +2,7 @@ const Cost = require('../models/Cost');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
-const { householdOwnerIdsFromUser } = require('../utils/household');
+const { normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
 
 /** Bump when report shape / bucketing logic changes (invalidates Mongo cache). */
 const REPORT_DATA_VERSION = 2;
@@ -61,16 +61,20 @@ function isCurrentMonth(year, month) {
  * This function implements the Computed Design Pattern by generating
  * reports that can be cached for past or future months
  */
-async function generateReport(userid, year, month) {
+async function generateReport(userid, year, month, viewScope = 'household') {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
 
   const user = await User.findOne({ id: parseInt(userid, 10) });
-  const fromPartner = householdOwnerIdsFromUser(user);
-  const ownerIds = fromPartner.length ? fromPartner : [parseInt(userid, 10)];
+  if (!user) {
+    throw new Error('User not found');
+  }
+  const scope = normalizeViewScope(viewScope);
+  const ownerIds = ownerUserIdsForView(user, scope);
+  const uid = parseInt(userid, 10);
 
   const costs = await Cost.find({
-    userid: { $in: ownerIds },
+    userid: { $in: ownerIds.length ? ownerIds : [uid] },
     created_at: { $gte: startDate, $lte: endDate },
     schedule_only: { $ne: true },
   });
@@ -107,10 +111,11 @@ async function generateReport(userid, year, month) {
  * Get report for a specific month/year
  * Implements Computed Design Pattern with caching
  */
-async function getReport(userid, year, month) {
+async function getReport(userid, year, month, viewScope = 'household') {
+  const scope = normalizeViewScope(viewScope);
   const current = isCurrentMonth(year, month);
 
-  if (!current) {
+  if (!current && scope === 'household') {
     let cachedReport = await Report.findOne({
       userid,
       year,
@@ -129,7 +134,7 @@ async function getReport(userid, year, month) {
     }
 
     logger.info(`Generating and caching report for user ${userid}, ${year}-${month}`);
-    const reportData = await generateReport(userid, year, month);
+    const reportData = await generateReport(userid, year, month, 'household');
 
     const newReport = new Report({
       userid,
@@ -142,9 +147,12 @@ async function getReport(userid, year, month) {
     await newReport.save();
     return reportData;
   } else {
-    // Current month - always calculate from scratch (don't cache)
-    logger.info(`Generating on-the-fly report for current month, user ${userid}`);
-    return await generateReport(userid, year, month);
+    if (scope === 'household') {
+      logger.info(`Generating on-the-fly report for current month, user ${userid}`);
+    } else {
+      logger.info(`Generating on-the-fly report (scope=${scope}) for user ${userid}, ${year}-${month}`);
+    }
+    return await generateReport(userid, year, month, scope);
   }
 }
 
