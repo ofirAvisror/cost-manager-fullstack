@@ -151,6 +151,7 @@ async function getCosts(req, res) {
       : (includePartner === 'true' || includePartner === true ? 'household' : 'self');
 
     let userIdsToUse;
+    let userForScope = null;
     if (req.user?.id) {
       const me = await User.findOne({ id: req.user.id });
       if (!me) {
@@ -159,16 +160,20 @@ async function getCosts(req, res) {
           message: 'User not found',
         });
       }
+      userForScope = me;
       userIdsToUse = ownerUserIdsForView(me, viewScope);
     } else {
       const uid = parseInt(userIdToUse, 10);
       const u = await User.findOne({ id: uid });
       userIdsToUse = u ? ownerUserIdsForView(u, viewScope) : [uid];
+      userForScope = u || null;
     }
     
     const costs = await costService.getCosts({
       userid: userIdToUse,
       userids: userIdsToUse,
+      viewScope,
+      userForScope,
       type,
       category,
       startDate,

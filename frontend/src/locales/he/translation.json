@@ -18,7 +18,11 @@
     "label": "תצוגה",
     "household": "זוג",
     "self": "אני",
-    "partner": "בן/בת הזוג"
+    "partner": "בן/בת הזוג",
+    "expenseLegendMine": "הוצאה שלי",
+    "expenseLegendPartner": "הוצאה של בן/בת הזוג",
+    "expenseLegendShared": "משותף",
+    "expenseLegendTitle": "צבעי הוצאות"
   },
   "common": {
     "costManager": "מנהל הוצאות",

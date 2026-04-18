@@ -9,7 +9,7 @@ function getApiBaseUrl() {
   return process.env.REACT_APP_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
-function getUserId() {
+export function getUserId() {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (raw) {
@@ -238,6 +238,11 @@ export async function openCostsDB(getViewFilter) {
                 type,
                 date: { year, month, day: item.day },
                 currency,
+                isShared: !!item.is_shared,
+                ownerUserId: item.owner_userid,
+                sharedWithUserId: item.shared_with_userid,
+                sharedSplit: item.shared_split,
+                paidByUserId: item.paid_by_userid,
               });
             });
           });
@@ -278,6 +283,11 @@ export async function openCostsDB(getViewFilter) {
             type: 'expense',
             date: item.date,
             currency: item.currency || currency,
+            isShared: !!item.isShared,
+            ownerUserId: item.ownerUserId,
+            sharedWithUserId: item.sharedWithUserId,
+            sharedSplit: item.sharedSplit,
+            paidByUserId: item.paidByUserId,
           }));
       }
       if (totalIncomes > 0 && incomeRows.length === 0) {

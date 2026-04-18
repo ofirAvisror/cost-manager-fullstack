@@ -1,6 +1,7 @@
 const Cost = require('../models/Cost');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
+const { costOwnerMatchForView } = require('../utils/household');
 const { computeNextOccurrence, processDueRecurringSchedules } = require('./recurring.service');
 
 const EXPENSE_CATEGORIES = ['food', 'health', 'housing', 'sports', 'education'];
@@ -218,6 +219,8 @@ async function getCosts(filters = {}) {
   const {
     userid,
     userids,
+    viewScope,
+    userForScope,
     type,
     category,
     startDate,
@@ -233,8 +236,13 @@ async function getCosts(filters = {}) {
   // Build query
   const query = {};
 
-  // Required: userid or userids
-  if (Array.isArray(userids) && userids.length > 0) {
+  if (userForScope && viewScope != null && String(viewScope).trim() !== '') {
+    const ownerMatch = costOwnerMatchForView(userForScope, viewScope);
+    if (!ownerMatch) {
+      throw new Error('userid is required');
+    }
+    Object.assign(query, ownerMatch);
+  } else if (Array.isArray(userids) && userids.length > 0) {
     query.userid = { $in: userids.map((id) => parseInt(id, 10)) };
   } else if (userid) {
     query.userid = parseInt(userid, 10);

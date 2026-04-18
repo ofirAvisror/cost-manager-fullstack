@@ -2,7 +2,7 @@
  * ReportView.jsx - Component for displaying detailed monthly reports
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -26,6 +26,13 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../contexts/HouseholdViewContext';
+import { getUserId } from '../lib/api-db';
+import {
+  getPerspectiveUserId,
+  getExpenseLineAmount,
+  getHouseholdExpenseKind,
+  householdExpenseRowSx,
+} from '../lib/expenseDisplay';
 import ExportDialog from './Export/ExportDialog';
 import toast from 'react-hot-toast';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -39,6 +46,9 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 export default function ReportView({ db }) {
   const { t } = useTranslation();
   const householdView = useHouseholdView();
+  const { viewScope, partnerId, partnerConnected } = householdView;
+  const myUserId = getUserId();
+  const perspectiveUserId = getPerspectiveUserId(viewScope, myUserId, partnerId);
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [currency, setCurrency] = useState('ILS');
@@ -123,6 +133,24 @@ export default function ReportView({ db }) {
     wordBreak: 'break-word',
     hyphens: 'auto',
   };
+
+  const expenseTotalsAdjusted = useMemo(
+    function () {
+      if (!report) return null;
+      if (viewScope !== 'household' && Array.isArray(report.expenses)) {
+        const expenseTotal = report.expenses.reduce(function (s, c) {
+          return s + getExpenseLineAmount(c, viewScope, perspectiveUserId);
+        }, 0);
+        const balance = Number(report.totals.incomes) - expenseTotal;
+        return { expenseTotal, balance };
+      }
+      return {
+        expenseTotal: Number(report.totals.expenses),
+        balance: Number(report.totals.balance),
+      };
+    },
+    [report, viewScope, perspectiveUserId]
+  );
 
   return (
     <Card 
@@ -319,7 +347,8 @@ export default function ReportView({ db }) {
                     {t('report.totalExpenses')}
                   </Typography>
                   <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'error.contrastText' }}>
-                    {report.totals.expenses.toFixed(2)} {report.totals.currency}
+                    {(expenseTotalsAdjusted?.expenseTotal ?? report.totals.expenses).toFixed(2)}{' '}
+                    {report.totals.currency}
                   </Typography>
                 </Paper>
 
@@ -345,14 +374,14 @@ export default function ReportView({ db }) {
                   elevation={0}
                   sx={{
                     ...summaryPaperSx,
-                    bgcolor: report.totals.balance >= 0 ? 'success.main' : 'error.main',
+                    bgcolor: (expenseTotalsAdjusted?.balance ?? report.totals.balance) >= 0 ? 'success.main' : 'error.main',
                   }}
                 >
                   <Typography variant="body2" sx={{ color: 'white', mb: 0.5, opacity: 0.9 }}>
                     {t('report.balance')}
                   </Typography>
                   <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'white' }}>
-                    {report.totals.balance.toFixed(2)} {report.totals.currency}
+                    {(expenseTotalsAdjusted?.balance ?? report.totals.balance).toFixed(2)} {report.totals.currency}
                   </Typography>
                 </Paper>
               </Box>
@@ -381,6 +410,51 @@ export default function ReportView({ db }) {
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         {t('report.expenses')}
                       </Typography>
+                      {viewScope === 'household' && partnerConnected ? (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            alignItems: 'center',
+                            mb: 2,
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                            {t('householdView.expenseLegendTitle')}:
+                          </Typography>
+                          <Chip
+                            size="small"
+                            label={t('householdView.expenseLegendMine')}
+                            sx={{
+                              bgcolor: 'rgba(25, 118, 210, 0.15)',
+                              borderLeft: '4px solid #1976d2',
+                              pl: 0.5,
+                              borderRadius: 1,
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={t('householdView.expenseLegendPartner')}
+                            sx={{
+                              bgcolor: 'rgba(237, 108, 2, 0.15)',
+                              borderLeft: '4px solid #ed6c02',
+                              pl: 0.5,
+                              borderRadius: 1,
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={t('householdView.expenseLegendShared')}
+                            sx={{
+                              bgcolor: 'rgba(156, 39, 176, 0.15)',
+                              borderLeft: '4px solid #9c27b0',
+                              pl: 0.5,
+                              borderRadius: 1,
+                            }}
+                          />
+                        </Box>
+                      ) : null}
                       <TableContainer 
                         component={Paper}
                         elevation={0}
@@ -406,27 +480,36 @@ export default function ReportView({ db }) {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {report.expenses.map((cost, index) => (
-                              <TableRow 
-                                key={index}
-                                sx={{ 
-                                  '&:nth-of-type(odd)': { bgcolor: 'action.hover' },
-                                  '&:hover': { bgcolor: 'action.selected' },
-                                }}
-                              >
-                                <TableCell>
-                                  <Chip label={getItemDay(cost)} size="small" color="error" variant="outlined" />
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'error.main' }}>
-                                  {getItemSum(cost).toFixed(2)}
-                                </TableCell>
-                                <TableCell>
-                                  <Chip label={cost.currency} size="small" />
-                                </TableCell>
-                                <TableCell>{cost.category}</TableCell>
-                                <TableCell>{cost.description}</TableCell>
-                              </TableRow>
-                            ))}
+                            {report.expenses.map((cost, index) => {
+                              const rowKind =
+                                viewScope === 'household' && partnerConnected
+                                  ? getHouseholdExpenseKind(cost, myUserId, partnerId)
+                                  : null;
+                              const lineAmt = getExpenseLineAmount(cost, viewScope, perspectiveUserId);
+                              return (
+                                <TableRow
+                                  key={index}
+                                  sx={{
+                                    '&:hover': { bgcolor: 'action.selected' },
+                                    ...(rowKind
+                                      ? householdExpenseRowSx(rowKind)
+                                      : { '&:nth-of-type(odd)': { bgcolor: 'action.hover' } }),
+                                  }}
+                                >
+                                  <TableCell>
+                                    <Chip label={getItemDay(cost)} size="small" color="error" variant="outlined" />
+                                  </TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: 'error.main' }}>
+                                    {lineAmt.toFixed(2)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip label={cost.currency} size="small" />
+                                  </TableCell>
+                                  <TableCell>{cost.category}</TableCell>
+                                  <TableCell>{cost.description}</TableCell>
+                                </TableRow>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </TableContainer>

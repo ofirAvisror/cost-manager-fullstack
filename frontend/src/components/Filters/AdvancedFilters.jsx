@@ -26,6 +26,13 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../../contexts/HouseholdViewContext';
+import { getUserId } from '../../lib/api-db';
+import {
+  getPerspectiveUserId,
+  getExpenseLineAmount,
+  getHouseholdExpenseKind,
+  householdExpenseRowSx,
+} from '../../lib/expenseDisplay';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import toast from 'react-hot-toast';
@@ -38,6 +45,17 @@ import toast from 'react-hot-toast';
 export default function AdvancedFilters({ db }) {
   const { t } = useTranslation();
   const householdView = useHouseholdView();
+  const { viewScope, partnerId, partnerConnected } = householdView;
+  const myUserId = getUserId();
+  const perspectiveUserId = getPerspectiveUserId(viewScope, myUserId, partnerId);
+
+  function displayedAmountInFilter(c) {
+    const typ = c.type || 'expense';
+    if (typ === 'expense') {
+      return getExpenseLineAmount(c, viewScope, perspectiveUserId);
+    }
+    return c.sum;
+  }
   const [startDate, setStartDate] = useState(function() {
     const date = new Date();
     return { year: date.getFullYear(), month: date.getMonth() + 1, day: 1 };
@@ -128,7 +146,10 @@ export default function AdvancedFilters({ db }) {
     setFilteredCosts([]);
   };
 
-  const totalAmount = filteredCosts.reduce((sum, cost) => sum + cost.sum, 0);
+  const totalAmount = filteredCosts.reduce(
+    (sum, cost) => sum + displayedAmountInFilter(cost),
+    0
+  );
 
   return (
     <Box>
@@ -294,7 +315,51 @@ export default function AdvancedFilters({ db }) {
                 {t('filters.total', { amount: totalAmount.toFixed(2), currency: currency })}
               </Typography>
             </Box>
-            
+            {viewScope === 'household' && partnerConnected ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 1,
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  {t('householdView.expenseLegendTitle')}:
+                </Typography>
+                <Chip
+                  size="small"
+                  label={t('householdView.expenseLegendMine')}
+                  sx={{
+                    bgcolor: 'rgba(25, 118, 210, 0.15)',
+                    borderLeft: '4px solid #1976d2',
+                    pl: 0.5,
+                    borderRadius: 1,
+                  }}
+                />
+                <Chip
+                  size="small"
+                  label={t('householdView.expenseLegendPartner')}
+                  sx={{
+                    bgcolor: 'rgba(237, 108, 2, 0.15)',
+                    borderLeft: '4px solid #ed6c02',
+                    pl: 0.5,
+                    borderRadius: 1,
+                  }}
+                />
+                <Chip
+                  size="small"
+                  label={t('householdView.expenseLegendShared')}
+                  sx={{
+                    bgcolor: 'rgba(156, 39, 176, 0.15)',
+                    borderLeft: '4px solid #9c27b0',
+                    pl: 0.5,
+                    borderRadius: 1,
+                  }}
+                />
+              </Box>
+            ) : null}
             <TableContainer>
               <Table>
                 <TableHead>
@@ -307,17 +372,31 @@ export default function AdvancedFilters({ db }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredCosts.map((cost) => (
-                    <TableRow key={cost.id}>
-                      <TableCell>
-                        {cost.date.year}-{cost.date.month}-{cost.date.day}
-                      </TableCell>
-                      <TableCell>{cost.category}</TableCell>
-                      <TableCell>{cost.description}</TableCell>
-                      <TableCell align="right">{cost.sum.toFixed(2)}</TableCell>
-                      <TableCell>{cost.currency}</TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredCosts.map((cost) => {
+                    const isExp = (cost.type || 'expense') === 'expense';
+                    const rowKind =
+                      isExp && viewScope === 'household' && partnerConnected
+                        ? getHouseholdExpenseKind(cost, myUserId, partnerId)
+                        : null;
+                    const lineAmt = displayedAmountInFilter(cost);
+                    return (
+                      <TableRow
+                        key={cost.id}
+                        sx={{
+                          '&:hover': { bgcolor: 'action.selected' },
+                          ...(rowKind ? householdExpenseRowSx(rowKind) : {}),
+                        }}
+                      >
+                        <TableCell>
+                          {cost.date.year}-{cost.date.month}-{cost.date.day}
+                        </TableCell>
+                        <TableCell>{cost.category}</TableCell>
+                        <TableCell>{cost.description}</TableCell>
+                        <TableCell align="right">{lineAmt.toFixed(2)}</TableCell>
+                        <TableCell>{cost.currency}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

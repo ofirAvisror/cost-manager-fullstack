@@ -18,7 +18,11 @@
     "label": "View",
     "household": "Couple",
     "self": "Me",
-    "partner": "Partner"
+    "partner": "Partner",
+    "expenseLegendMine": "My expense",
+    "expenseLegendPartner": "Partner expense",
+    "expenseLegendShared": "Shared",
+    "expenseLegendTitle": "Expense colors"
   },
   "common": {
     "costManager": "Cost Manager",

@@ -62,10 +62,46 @@ async function resolveOwnerIdsForView(userid, viewScope) {
   return ids.length ? ids : [id];
 }
 
+/**
+ * Mongo match for costs visible in viewScope. For self/partner, includes shared rows
+ * where the focus user is shared_with_userid (owner userid may be the other person).
+ * @param {import('../models/User')} user
+ * @param {string} viewScope household | self | partner
+ */
+function costOwnerMatchForView(user, viewScope) {
+  const scope = normalizeViewScope(viewScope);
+  if (!user || user.id == null) return null;
+  const self = typeof user.id === 'number' ? user.id : parseInt(user.id, 10);
+  if (scope === 'household') {
+    const ids = householdOwnerIdsFromUser(user);
+    return { userid: { $in: ids.length ? ids : [self] } };
+  }
+  if (scope === 'self') {
+    return {
+      $or: [
+        { userid: self },
+        { is_shared: true, shared_with_userid: self },
+      ],
+    };
+  }
+  if (scope === 'partner') {
+    const focusIds = ownerUserIdsForView(user, 'partner');
+    const focus = focusIds[0] ?? self;
+    return {
+      $or: [
+        { userid: focus },
+        { is_shared: true, shared_with_userid: focus },
+      ],
+    };
+  }
+  return { userid: self };
+}
+
 module.exports = {
   householdOwnerIdsFromUser,
   resolveHouseholdOwnerIds,
   normalizeViewScope,
   ownerUserIdsForView,
   resolveOwnerIdsForView,
+  costOwnerMatchForView,
 };

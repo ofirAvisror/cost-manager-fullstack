@@ -2,10 +2,10 @@ const Cost = require('../models/Cost');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
-const { normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
+const { normalizeViewScope, costOwnerMatchForView } = require('../utils/household');
 
 /** Bump when report shape / bucketing logic changes (invalidates Mongo cache). */
-const REPORT_DATA_VERSION = 2;
+const REPORT_DATA_VERSION = 3;
 
 function totalLineItemsInBuckets(buckets) {
   if (!Array.isArray(buckets)) return 0;
@@ -41,6 +41,16 @@ function bucketCostsByCategory(rows) {
       sum: t.sum,
       description: t.description,
       day: new Date(t.created_at).getDate(),
+      is_shared: !!t.is_shared,
+      owner_userid: t.owner_userid,
+      shared_with_userid: t.shared_with_userid,
+      shared_split: t.shared_split
+        ? {
+            self_percentage: t.shared_split.self_percentage,
+            partner_percentage: t.shared_split.partner_percentage,
+          }
+        : undefined,
+      paid_by_userid: t.paid_by_userid,
     });
   });
   return Object.keys(groups)
@@ -70,11 +80,10 @@ async function generateReport(userid, year, month, viewScope = 'household') {
     throw new Error('User not found');
   }
   const scope = normalizeViewScope(viewScope);
-  const ownerIds = ownerUserIdsForView(user, scope);
-  const uid = parseInt(userid, 10);
+  const ownerMatch = costOwnerMatchForView(user, scope);
 
   const costs = await Cost.find({
-    userid: { $in: ownerIds.length ? ownerIds : [uid] },
+    ...ownerMatch,
     created_at: { $gte: startDate, $lte: endDate },
     schedule_only: { $ne: true },
   });

@@ -18,7 +18,11 @@
     "label": "Vista",
     "household": "Pareja",
     "self": "Yo",
-    "partner": "Pareja (otro)"
+    "partner": "Pareja (otro)",
+    "expenseLegendMine": "Mi gasto",
+    "expenseLegendPartner": "Gasto de la pareja",
+    "expenseLegendShared": "Compartido",
+    "expenseLegendTitle": "Leyenda de colores"
   },
   "common": {
     "costManager": "Gestor de Gastos",

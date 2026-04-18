@@ -30,6 +30,13 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../../contexts/HouseholdViewContext';
+import { getUserId } from '../../lib/api-db';
+import {
+  getPerspectiveUserId,
+  getExpenseLineAmount,
+  getHouseholdExpenseKind,
+  householdExpenseRowSx,
+} from '../../lib/expenseDisplay';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -61,7 +68,10 @@ function formatCategoryExpenseTotalsLine(totals) {
  */
 export default function CategoriesManager({ db }) {
   const { t, i18n } = useTranslation();
-  const { viewScope, partnerId } = useHouseholdView();
+  const householdView = useHouseholdView();
+  const { viewScope, partnerId, partnerConnected } = householdView;
+  const myUserId = getUserId();
+  const perspectiveUserId = getPerspectiveUserId(viewScope, myUserId, partnerId);
   const isRtl = i18n.dir() === 'rtl';
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +96,7 @@ export default function CategoriesManager({ db }) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, viewScope, partnerId]);
+  }, [db, householdView]);
 
   const loadCategories = async function() {
     if (!db) return;
@@ -133,7 +143,11 @@ export default function CategoriesManager({ db }) {
         categoryTransactions.forEach(function(transaction) {
           const type = transaction.type || 'expense';
           if (type === 'expense' && expenseTotalsByCurrency[transaction.currency] != null) {
-            expenseTotalsByCurrency[transaction.currency] += transaction.sum;
+            expenseTotalsByCurrency[transaction.currency] += getExpenseLineAmount(
+              transaction,
+              viewScope,
+              perspectiveUserId
+            );
           }
         });
         category.expenseTotalsByCurrency = expenseTotalsByCurrency;
@@ -311,7 +325,12 @@ export default function CategoriesManager({ db }) {
       };
 
       costs.forEach(function(cost) {
-        totals[cost.currency] += cost.sum;
+        const typ = cost.type || 'expense';
+        if (typ === 'expense') {
+          totals[cost.currency] += getExpenseLineAmount(cost, viewScope, perspectiveUserId);
+        } else {
+          totals[cost.currency] += cost.sum;
+        }
       });
 
       setCategoryTotal(totals);
@@ -586,6 +605,51 @@ export default function CategoriesManager({ db }) {
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 {t('common.allExpenses')} ({categoryCosts.length})
               </Typography>
+              {viewScope === 'household' && partnerConnected ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    {t('householdView.expenseLegendTitle')}:
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={t('householdView.expenseLegendMine')}
+                    sx={{
+                      bgcolor: 'rgba(25, 118, 210, 0.15)',
+                      borderLeft: '4px solid #1976d2',
+                      pl: 0.5,
+                      borderRadius: 1,
+                    }}
+                  />
+                  <Chip
+                    size="small"
+                    label={t('householdView.expenseLegendPartner')}
+                    sx={{
+                      bgcolor: 'rgba(237, 108, 2, 0.15)',
+                      borderLeft: '4px solid #ed6c02',
+                      pl: 0.5,
+                      borderRadius: 1,
+                    }}
+                  />
+                  <Chip
+                    size="small"
+                    label={t('householdView.expenseLegendShared')}
+                    sx={{
+                      bgcolor: 'rgba(156, 39, 176, 0.15)',
+                      borderLeft: '4px solid #9c27b0',
+                      pl: 0.5,
+                      borderRadius: 1,
+                    }}
+                  />
+                </Box>
+              ) : null}
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -597,20 +661,39 @@ export default function CategoriesManager({ db }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {categoryCosts.map((cost) => (
-                      <TableRow key={cost.id}>
-                        <TableCell>
-                          {cost.date.year}-{cost.date.month.toString().padStart(2, '0')}-{cost.date.day.toString().padStart(2, '0')}
-                        </TableCell>
-                        <TableCell>{cost.description}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>
-                          {cost.sum.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={cost.currency} size="small" color="primary" variant="outlined" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {categoryCosts.map((cost) => {
+                      const isExp = (cost.type || 'expense') === 'expense';
+                      const rowKind =
+                        isExp && viewScope === 'household' && partnerConnected
+                          ? getHouseholdExpenseKind(cost, myUserId, partnerId)
+                          : null;
+                      const lineAmt = isExp
+                        ? getExpenseLineAmount(cost, viewScope, perspectiveUserId)
+                        : cost.sum;
+                      return (
+                        <TableRow
+                          key={cost.id}
+                          sx={{
+                            '&:hover': { bgcolor: 'action.selected' },
+                            ...(rowKind
+                              ? householdExpenseRowSx(rowKind)
+                              : {}),
+                          }}
+                        >
+                          <TableCell>
+                            {cost.date.year}-{cost.date.month.toString().padStart(2, '0')}-
+                            {cost.date.day.toString().padStart(2, '0')}
+                          </TableCell>
+                          <TableCell>{cost.description}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            {lineAmt.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={cost.currency} size="small" color="primary" variant="outlined" />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
