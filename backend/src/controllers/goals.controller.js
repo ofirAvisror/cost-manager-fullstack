@@ -1,6 +1,8 @@
 const goalService = require('../services/goal.service');
+const User = require('../models/User');
 const { validateDate, validatePositiveNumber } = require('../utils/validators');
 const { logger } = require('../config/logger');
+const { normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
 
 /**
  * Create a new goal
@@ -73,7 +75,8 @@ async function createGoal(req, res) {
  */
 async function getGoals(req, res) {
   try {
-    const { userid, status } = req.query;
+    const { userid, status, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid) {
       return res.status(400).json({ 
@@ -82,7 +85,11 @@ async function getGoals(req, res) {
       });
     }
 
-    const goals = await goalService.getGoals({ userid, status });
+    const uid = parseInt(userid, 10);
+    const user = await User.findOne({ id: uid });
+    const userids = user && user.id != null ? ownerUserIdsForView(user, viewScope) : [uid];
+
+    const goals = await goalService.getGoals({ userid, userids, status });
     res.json(goals);
   } catch (error) {
     logger.error('Error fetching goals:', error.message);

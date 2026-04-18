@@ -465,7 +465,11 @@ export async function openCostsDB(getViewFilter) {
     },
 
     async getAllBudgets() {
-      const budgets = await apiRequest(`/api/budgets?userid=${getUserId()}`);
+      const params = new URLSearchParams({
+        userid: String(getUserId()),
+        viewScope: viewScopeParam(),
+      });
+      const budgets = await apiRequest(`/api/budgets?${params.toString()}`);
       return (budgets || []).map((budget) => ({
         id: budget._id || budget.id,
         year: budget.year,
@@ -478,7 +482,11 @@ export async function openCostsDB(getViewFilter) {
     },
 
     async getSavingsGoals() {
-      const goals = await apiRequest(`/api/goals?userid=${getUserId()}`);
+      const params = new URLSearchParams({
+        userid: String(getUserId()),
+        viewScope: viewScopeParam(),
+      });
+      const goals = await apiRequest(`/api/goals?${params.toString()}`);
       return (goals || []).map((goal) => {
         const date = goal.deadline ? new Date(goal.deadline) : new Date();
         return {

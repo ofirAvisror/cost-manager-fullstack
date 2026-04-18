@@ -108,7 +108,7 @@ export default function Layout({
             }),
           }}
         >
-          <HouseholdViewSelect />
+          {currentView !== 'add-cost' ? <HouseholdViewSelect /> : null}
           {children}
         </Box>
       </Box>

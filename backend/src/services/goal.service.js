@@ -35,9 +35,14 @@ async function createGoal(goalData) {
  * Get goals with filters
  */
 async function getGoals(filters) {
-  const { userid, status } = filters;
+  const { userid, userids, status } = filters;
 
-  const query = { userid: parseInt(userid) };
+  const query = {};
+  if (Array.isArray(userids) && userids.length > 0) {
+    query.userid = { $in: userids.map((id) => parseInt(id, 10)) };
+  } else {
+    query.userid = parseInt(userid, 10);
+  }
   if (status) {
     query.status = status.toLowerCase();
   }

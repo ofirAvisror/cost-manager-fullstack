@@ -1,6 +1,8 @@
 const budgetService = require('../services/budget.service');
+const User = require('../models/User');
 const { validateMonth, validateYear, validatePositiveNumber } = require('../utils/validators');
 const { logger } = require('../config/logger');
+const { normalizeViewScope, ownerUserIdsForView } = require('../utils/household');
 
 /**
  * Create a new budget
@@ -90,7 +92,8 @@ async function createBudget(req, res) {
  */
 async function getBudgets(req, res) {
   try {
-    const { userid, year, month, type, category } = req.query;
+    const { userid, year, month, type, category, viewScope: viewScopeRaw } = req.query;
+    const viewScope = normalizeViewScope(viewScopeRaw);
 
     if (!userid) {
       return res.status(400).json({ 
@@ -99,7 +102,18 @@ async function getBudgets(req, res) {
       });
     }
 
-    const budgets = await budgetService.getBudgets({ userid, year, month, type, category });
+    const uid = parseInt(userid, 10);
+    const user = await User.findOne({ id: uid });
+    const userids = user && user.id != null ? ownerUserIdsForView(user, viewScope) : [uid];
+
+    const budgets = await budgetService.getBudgets({
+      userid,
+      userids,
+      year,
+      month,
+      type,
+      category,
+    });
     res.json(budgets);
   } catch (error) {
     logger.error('Error fetching budgets:', error.message);

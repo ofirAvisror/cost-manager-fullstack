@@ -44,9 +44,16 @@ async function createBudget(budgetData) {
  * Get budgets with filters
  */
 async function getBudgets(filters) {
-  const { userid, year, month, type, category } = filters;
+  const { userid, userids, year, month, type, category } = filters;
 
-  const query = { userid: parseInt(userid) };
+  let useridClause;
+  if (Array.isArray(userids) && userids.length > 0) {
+    useridClause = { $in: userids.map((id) => parseInt(id, 10)) };
+  } else {
+    useridClause = parseInt(userid, 10);
+  }
+
+  const query = { userid: useridClause };
 
   if (year) query.year = parseInt(year);
   if (month) query.month = parseInt(month);

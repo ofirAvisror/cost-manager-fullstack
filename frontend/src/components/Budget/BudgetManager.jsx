@@ -35,7 +35,7 @@ import toast from 'react-hot-toast';
  */
 export default function BudgetManager({ db }) {
   const { t } = useTranslation();
-  const { viewScope, partnerId } = useHouseholdView();
+  const householdView = useHouseholdView();
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -54,14 +54,14 @@ export default function BudgetManager({ db }) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, viewScope, partnerId]);
+  }, [db, householdView]);
 
   useEffect(function() {
     if (db && budgets.length > 0) {
       loadSpentAmounts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, budgets, viewScope, partnerId]);
+  }, [db, budgets, householdView]);
 
   const loadBudgets = async function() {
     if (!db) return;
