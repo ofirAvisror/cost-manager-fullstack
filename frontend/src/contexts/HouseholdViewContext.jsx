@@ -57,6 +57,15 @@ export function HouseholdViewProvider({ children }) {
     partnerConnected: false,
   });
 
+  // Same commit as children: child useEffects run before parent useEffects, so updating
+  // this ref only in an effect would make api-db read a stale viewScope (often "household")
+  // for budgets/goals/costs right after the user switches scope.
+  filterRef.current = {
+    viewScope,
+    partnerId,
+    partnerConnected,
+  };
+
   useEffect(function loadPartner() {
     let cancelled = false;
     fetchPartnerId().then(function (res) {
@@ -68,17 +77,6 @@ export function HouseholdViewProvider({ children }) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(
-    function syncRef() {
-      filterRef.current = {
-        viewScope,
-        partnerId,
-        partnerConnected,
-      };
-    },
-    [viewScope, partnerId, partnerConnected]
-  );
 
   useEffect(
     function partnerOnlyNeedsConnection() {
