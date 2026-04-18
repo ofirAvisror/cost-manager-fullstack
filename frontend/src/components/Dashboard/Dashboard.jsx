@@ -40,7 +40,7 @@ export default function Dashboard({ db, onViewChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
-  const [currency] = useState('USD');
+  const [currency] = useState('ILS');
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;

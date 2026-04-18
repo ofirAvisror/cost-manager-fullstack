@@ -2,7 +2,7 @@
  * NotificationContext.jsx - Context for managing notifications
  */
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import i18n from '../i18n/config';
 
 const NotificationContext = createContext(undefined);
@@ -102,7 +102,7 @@ export function NotificationProvider({ children }) {
     });
   };
 
-  const checkBudgets = async function(db) {
+  const checkBudgets = useCallback(async function(db) {
     if (!db) return;
 
     try {
@@ -162,7 +162,7 @@ export function NotificationProvider({ children }) {
     } catch (error) {
       // Ignore
     }
-  };
+  }, []);
 
   return (
     <NotificationContext.Provider

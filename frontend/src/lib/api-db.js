@@ -115,7 +115,7 @@ function serializeCost(cost) {
     category: backendCategory,
     userid: getUserId(),
     sum: cost.sum,
-    currency: toBackendCurrency(cost.currency || 'USD'),
+    currency: toBackendCurrency(cost.currency || 'ILS'),
     tags: customTags,
   };
 }
@@ -295,7 +295,7 @@ export async function openCostsDB() {
         type: budgetData.type,
         category: budgetData.type === 'category' ? budgetData.category : undefined,
         amount: budgetData.amount,
-        currency: toBackendCurrency(budgetData.currency || 'USD'),
+        currency: toBackendCurrency(budgetData.currency || 'ILS'),
       };
 
       await apiRequest('/api/budgets', {
@@ -326,7 +326,7 @@ export async function openCostsDB() {
           name: goal.title,
           targetAmount: goal.target_amount,
           currentAmount: goal.current_amount || 0,
-          currency: toFrontendCurrency(goal.currency || 'USD'),
+          currency: toFrontendCurrency(goal.currency || 'ILS'),
           targetDate: {
             year: date.getFullYear(),
             month: date.getMonth() + 1,
@@ -353,7 +353,7 @@ export async function openCostsDB() {
           current_amount: 0,
           deadline,
           category: 'savings',
-          currency: toBackendCurrency(goalData.currency || 'USD'),
+          currency: toBackendCurrency(goalData.currency || 'ILS'),
           status: 'active',
         }),
       });
@@ -372,7 +372,7 @@ export async function openCostsDB() {
           title: goalData.name,
           target_amount: goalData.targetAmount,
           deadline,
-          currency: toBackendCurrency(goalData.currency || 'USD'),
+          currency: toBackendCurrency(goalData.currency || 'ILS'),
         }),
       });
     },

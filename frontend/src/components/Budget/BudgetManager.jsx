@@ -41,7 +41,7 @@ export default function BudgetManager({ db }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [spentAmounts, setSpentAmounts] = useState({});
@@ -133,7 +133,7 @@ export default function BudgetManager({ db }) {
     setYear(new Date().getFullYear());
     setMonth(new Date().getMonth() + 1);
     setAmount('');
-    setCurrency('USD');
+    setCurrency('ILS');
     setCategory('');
   };
 

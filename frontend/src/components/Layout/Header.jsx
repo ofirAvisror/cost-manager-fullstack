@@ -210,27 +210,9 @@ export default function Header({ onMenuClick, notificationCount = 0, auth = null
           <AccountBalanceWalletIcon />
         </IconButton>
         
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
-          {t('common.costManager')}
-        </Typography>
+        <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {auth?.user?.email && (
-            <Chip
-              label={auth.user.email}
-              size="small"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
-              variant="outlined"
-            />
-          )}
-          {partnerNavLabel && (
-            <Chip
-              label={partnerNavLabel}
-              size="small"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
-              variant="outlined"
-            />
-          )}
           {onLogout && (
             <Button color="inherit" onClick={onLogout}>
               {t('header.logout')}

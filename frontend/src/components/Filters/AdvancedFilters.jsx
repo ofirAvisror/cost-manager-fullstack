@@ -47,7 +47,7 @@ export default function AdvancedFilters({ db }) {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [filteredCosts, setFilteredCosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -122,7 +122,7 @@ export default function AdvancedFilters({ db }) {
     setSelectedCategories([]);
     setMinAmount('');
     setMaxAmount('');
-    setCurrency('USD');
+    setCurrency('ILS');
     setFilteredCosts([]);
   };
 

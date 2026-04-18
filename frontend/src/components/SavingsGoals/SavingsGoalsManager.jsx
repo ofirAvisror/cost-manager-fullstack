@@ -49,7 +49,7 @@ export default function SavingsGoalsManager({ db }) {
   const [goalName, setGoalName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState(null);
 
@@ -135,7 +135,7 @@ export default function SavingsGoalsManager({ db }) {
       setGoalName('');
       setTargetAmount('');
       setTargetDate('');
-      setCurrency('USD');
+      setCurrency('ILS');
     }
     setOpenDialog(true);
   };
@@ -146,7 +146,7 @@ export default function SavingsGoalsManager({ db }) {
     setGoalName('');
     setTargetAmount('');
     setTargetDate('');
-    setCurrency('USD');
+    setCurrency('ILS');
   };
 
   const handleSave = async function() {

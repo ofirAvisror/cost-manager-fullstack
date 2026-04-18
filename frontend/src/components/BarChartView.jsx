@@ -41,8 +41,8 @@ export default function BarChartView({ db }) {
   const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0]);
   const [groupBy, setGroupBy] = useState('months'); // 'months' or 'days'
-  const [currency, setCurrency] = useState('USD');
-  const [displayedCurrency, setDisplayedCurrency] = useState('USD'); // Currency actually used in the chart
+  const [currency, setCurrency] = useState('ILS');
+  const [displayedCurrency, setDisplayedCurrency] = useState('ILS'); // Currency actually used in the chart
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');

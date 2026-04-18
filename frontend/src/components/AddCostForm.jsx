@@ -63,7 +63,7 @@ const costFormSchema = z.object({
 export default function AddCostForm({ db }) {
   const { t } = useTranslation();
   const [sum, setSum] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [transactionType, setTransactionType] = useState('expense');
@@ -218,7 +218,7 @@ export default function AddCostForm({ db }) {
 
       // Reset form and show success message
       setSum('');
-      setCurrency('USD');
+      setCurrency('ILS');
       setCategory('');
       setDescription('');
       setTransactionType('expense');

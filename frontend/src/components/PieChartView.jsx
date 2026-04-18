@@ -34,7 +34,7 @@ export default function PieChartView({ db }) {
   const { t } = useTranslation();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');

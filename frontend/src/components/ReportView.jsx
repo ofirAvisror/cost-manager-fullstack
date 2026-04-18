@@ -39,7 +39,7 @@ export default function ReportView({ db }) {
   const { t } = useTranslation();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('ILS');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
