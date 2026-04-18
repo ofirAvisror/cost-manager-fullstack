@@ -65,7 +65,7 @@
     "income": "Ingreso",
     "savings": "Ahorros",
     "savingsAction": "Acción de Ahorro",
-    "assignTo": "Asignar a",
+    "paidBy": "Pagado por",
     "meOption": "Yo",
     "partnerOption": "Pareja",
     "sharedPayment": "Pago compartido (pareja)",
@@ -142,7 +142,7 @@
     "pleaseEnterDescription": "Por favor ingrese una descripción",
     "pleaseEnterAmount": "Por favor ingrese una cantidad",
     "pleaseEnterValidAmount": "Por favor ingrese una cantidad válida",
-    "connectPartnerToAssign": "Conecta una pareja para poder asignar o dividir gastos.",
+    "connectPartnerToAssign": "Conecta una pareja para pagos compartidos y división.",
     "sharedRequiresPartner": "El pago compartido requiere una pareja conectada",
     "manualSplitRangeError": "La división manual debe estar entre 0-100%"
   },

@@ -65,7 +65,7 @@
     "income": "Income",
     "savings": "Savings",
     "savingsAction": "Savings Action",
-    "assignTo": "Assign To",
+    "paidBy": "Paid by",
     "meOption": "Me",
     "partnerOption": "Partner",
     "sharedPayment": "Shared payment (couple)",
@@ -142,7 +142,7 @@
     "pleaseEnterDescription": "Please enter a description",
     "pleaseEnterAmount": "Please enter an amount",
     "pleaseEnterValidAmount": "Please enter a valid amount",
-    "connectPartnerToAssign": "Connect a partner to assign costs or use shared split.",
+    "connectPartnerToAssign": "Connect a partner to use shared payments and splits.",
     "sharedRequiresPartner": "Shared payment requires connected partner",
     "manualSplitRangeError": "Manual split must be within 0-100%"
   },

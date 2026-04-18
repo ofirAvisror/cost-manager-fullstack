@@ -2,44 +2,18 @@
  * exportHelpers.js - Helper functions for exporting data
  */
 
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import bidiFactory from 'bidi-js';
+import notoSansHebrewFontBase64 from './notoSansHebrewFontBase64';
 
 /** jsPDF built-in fonts have no Hebrew glyphs — text becomes mojibake without a Unicode font. */
 const HEBREW_PDF_FONT = 'NotoSansHebrew';
 const HEBREW_FONT_FILE = 'NotoSansHebrew-Regular.ttf';
-const HEBREW_FONT_PATH = `${process.env.PUBLIC_URL || ''}/fonts/${HEBREW_FONT_FILE}`;
 
 const bidi = bidiFactory();
 
 const HEBREW_RE = /[\u0590-\u05FF\uFB1D-\uFB4F]/;
-
-let hebrewFontBase64Promise = null;
-
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-function loadHebrewFontBase64() {
-  if (!hebrewFontBase64Promise) {
-    hebrewFontBase64Promise = fetch(HEBREW_FONT_PATH)
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error('Failed to load PDF font');
-        }
-        return response.arrayBuffer();
-      })
-      .then(arrayBufferToBase64);
-  }
-  return hebrewFontBase64Promise;
-}
 
 /**
  * jsPDF draws glyph runs in logical LTR order; reorder for correct Hebrew / mixed text (Unicode BiDi).
@@ -62,9 +36,8 @@ function textForPdfLtrDraw(str) {
  * Registers Noto Sans Hebrew on the document (required per jsPDF instance).
  * @param {import('jspdf').jsPDF} doc
  */
-async function registerHebrewFont(doc) {
-  const base64 = await loadHebrewFontBase64();
-  doc.addFileToVFS(HEBREW_FONT_FILE, base64);
+function registerHebrewFont(doc) {
+  doc.addFileToVFS(HEBREW_FONT_FILE, notoSansHebrewFontBase64);
   doc.addFont(HEBREW_FONT_FILE, HEBREW_PDF_FONT, 'normal');
   doc.setFont(HEBREW_PDF_FONT, 'normal');
 }
@@ -177,7 +150,7 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
   const margin = 14;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  await registerHebrewFont(doc);
+  registerHebrewFont(doc);
 
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -203,7 +176,7 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
     columnStyles[index] = { cellWidth: COL_WIDTH_MM[id] || 28 };
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     head: head,
     body: tableData,
     startY: 36,
@@ -226,7 +199,8 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
   });
 
   const total = costs.reduce(function(sum, cost) {
-    return sum + cost.sum;
+    const n = Number(cost && cost.sum);
+    return sum + (Number.isFinite(n) ? n : 0);
   }, 0);
   const finalY = doc.lastAutoTable.finalY || 36;
   doc.setFontSize(12);

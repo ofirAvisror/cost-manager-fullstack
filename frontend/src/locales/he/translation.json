@@ -65,7 +65,7 @@
     "income": "הכנסה",
     "savings": "חסכונות",
     "savingsAction": "פעולת חסכונות",
-    "assignTo": "שיוך ל",
+    "paidBy": "שולם על ידי",
     "meOption": "אני",
     "partnerOption": "פרטנר",
     "sharedPayment": "תשלום משותף (זוג)",
@@ -142,7 +142,7 @@
     "pleaseEnterDescription": "אנא הזן תיאור",
     "pleaseEnterAmount": "אנא הזן סכום",
     "pleaseEnterValidAmount": "אנא הזן סכום תקין",
-    "connectPartnerToAssign": "חבר פרטנר כדי לאפשר שיוך או חלוקה משותפת.",
+    "connectPartnerToAssign": "חבר פרטנר כדי לאפשר תשלום משותף וחלוקה.",
     "sharedRequiresPartner": "תשלום משותף דורש פרטנר מחובר",
     "manualSplitRangeError": "חלוקה ידנית חייבת להיות בטווח 0-100%"
   },

@@ -132,11 +132,30 @@ export default function Dashboard({ db, onViewChange }) {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 4 }}>
-        {t('dashboard.title')}
-      </Typography>
-      <Box sx={{ mb: 3 }}>
-        <Button variant="outlined" onClick={() => onViewChange?.('partner')}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+          mb: 4,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          {t('dashboard.title')}
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => onViewChange?.('partner')}
+          sx={{
+            py: 0.25,
+            px: 1.25,
+            fontSize: '0.8125rem',
+            flexShrink: 0,
+          }}
+        >
           {t('dashboard.managePartner')}
         </Button>
       </Box>

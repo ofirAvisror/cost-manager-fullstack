@@ -104,7 +104,8 @@ export default function ExportDialog({ open, onClose, db }) {
 
       onClose();
     } catch (error) {
-      toast.error(t('messages.failedToExport'));
+      const detail = error instanceof Error && error.message ? `: ${error.message}` : '';
+      toast.error(t('messages.failedToExport') + detail);
     } finally {
       setLoading(false);
     }

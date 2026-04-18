@@ -71,7 +71,7 @@ export default function AddCostForm({ db }) {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [errors, setErrors] = useState({});
   const [partnerStatus, setPartnerStatus] = useState(null);
-  const [ownerTarget, setOwnerTarget] = useState('self');
+  const [paidByTarget, setPaidByTarget] = useState('self');
   const [isShared, setIsShared] = useState(false);
   const [splitMode, setSplitMode] = useState('half_half');
   const [selfPercentage, setSelfPercentage] = useState(50);
@@ -185,7 +185,7 @@ export default function AddCostForm({ db }) {
       }
 
       if (!hasConnectedPartner) {
-        setOwnerTarget('self');
+        setPaidByTarget('self');
       }
       if (isShared && !hasConnectedPartner) {
         toast.error(t('messages.sharedRequiresPartner'));
@@ -199,7 +199,8 @@ export default function AddCostForm({ db }) {
         }
       }
 
-      const finalOwnerUserId = ownerTarget === 'partner' && partnerUserId ? partnerUserId : myUserId;
+      const finalPaidByUserId =
+        isShared && paidByTarget === 'partner' && partnerUserId ? partnerUserId : myUserId;
       const splitPayload = splitMode === 'manual'
         ? { self_percentage: selfPercentage, partner_percentage: 100 - selfPercentage }
         : { self_percentage: 50, partner_percentage: 50 };
@@ -210,8 +211,8 @@ export default function AddCostForm({ db }) {
         category: result.data.category,
         description: result.data.description,
         type: type,
-        ownerUserId: finalOwnerUserId || undefined,
-        paidByUserId: myUserId || undefined,
+        ownerUserId: myUserId || undefined,
+        paidByUserId: finalPaidByUserId || undefined,
         isShared: isShared,
         sharedWithUserId: isShared ? partnerUserId : null,
         sharedSplitMode: splitMode,
@@ -228,7 +229,7 @@ export default function AddCostForm({ db }) {
       setTransactionType('expense');
       setSavingsAction('deposit');
       setErrors({});
-      setOwnerTarget('self');
+      setPaidByTarget('self');
       setIsShared(false);
       setSplitMode('half_half');
       setSelfPercentage(50);
@@ -336,22 +337,6 @@ export default function AddCostForm({ db }) {
             </Tooltip>
           )}
 
-          <FormControl
-            fullWidth
-            margin="normal"
-            disabled={!hasConnectedPartner}
-          >
-            <InputLabel>{t('forms.assignTo')}</InputLabel>
-            <Select
-              value={ownerTarget}
-              label={t('forms.assignTo')}
-              onChange={(e) => setOwnerTarget(e.target.value)}
-            >
-              <MenuItem value="self">{t('forms.meOption')}</MenuItem>
-              <MenuItem value="partner">{partnerDisplayName}</MenuItem>
-            </Select>
-          </FormControl>
-
           {!hasConnectedPartner && (
             <Alert severity="info" sx={{ mt: 1 }}>
               {t('messages.connectPartnerToAssign')}
@@ -363,12 +348,61 @@ export default function AddCostForm({ db }) {
             control={
               <Switch
                 checked={isShared}
-                onChange={(e) => setIsShared(e.target.checked)}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setIsShared(next);
+                  if (!next) {
+                    setPaidByTarget('self');
+                    setSplitMode('half_half');
+                    setSelfPercentage(50);
+                  }
+                }}
                 disabled={!hasConnectedPartner}
               />
             }
             label={t('forms.sharedPayment')}
           />
+
+          {isShared && (
+            <>
+              <FormControl fullWidth margin="normal" disabled={!hasConnectedPartner}>
+                <InputLabel>{t('forms.paidBy')}</InputLabel>
+                <Select
+                  value={paidByTarget}
+                  label={t('forms.paidBy')}
+                  onChange={(e) => setPaidByTarget(e.target.value)}
+                >
+                  <MenuItem value="self">{t('forms.meOption')}</MenuItem>
+                  <MenuItem value="partner">{partnerDisplayName}</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel>{t('forms.splitMode')}</InputLabel>
+                <Select
+                  value={splitMode}
+                  label={t('forms.splitMode')}
+                  onChange={(e) => setSplitMode(e.target.value)}
+                >
+                  <MenuItem value="half_half">{t('forms.splitHalfHalf')}</MenuItem>
+                  <MenuItem value="manual">{t('forms.splitManual')}</MenuItem>
+                </Select>
+              </FormControl>
+
+              {splitMode === 'manual' && (
+                <TextField
+                  label={t('forms.mySharePercent')}
+                  type="number"
+                  value={selfPercentage}
+                  onChange={(e) => setSelfPercentage(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  fullWidth
+                  margin="normal"
+                  inputProps={{ min: 0, max: 100, step: 1 }}
+                  helperText={t('forms.partnerSharePercent', { percent: 100 - selfPercentage })}
+                />
+              )}
+            </>
+          )}
 
           {transactionType === 'expense' && (
             <>
@@ -396,35 +430,6 @@ export default function AddCostForm({ db }) {
                     <MenuItem value="yearly">{t('recurring.frequency.yearly')}</MenuItem>
                   </Select>
                 </FormControl>
-              )}
-            </>
-          )}
-
-          {isShared && (
-            <>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>{t('forms.splitMode')}</InputLabel>
-                <Select
-                  value={splitMode}
-                  label={t('forms.splitMode')}
-                  onChange={(e) => setSplitMode(e.target.value)}
-                >
-                  <MenuItem value="half_half">{t('forms.splitHalfHalf')}</MenuItem>
-                  <MenuItem value="manual">{t('forms.splitManual')}</MenuItem>
-                </Select>
-              </FormControl>
-
-              {splitMode === 'manual' && (
-                <TextField
-                  label={t('forms.mySharePercent')}
-                  type="number"
-                  value={selfPercentage}
-                  onChange={(e) => setSelfPercentage(Math.min(100, Math.max(0, Number(e.target.value))))}
-                  fullWidth
-                  margin="normal"
-                  inputProps={{ min: 0, max: 100, step: 1 }}
-                  helperText={t('forms.partnerSharePercent', { percent: 100 - selfPercentage })}
-                />
               )}
             </>
           )}
