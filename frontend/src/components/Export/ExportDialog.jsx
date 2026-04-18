@@ -17,7 +17,9 @@ import {
   Radio,
   Checkbox,
   FormGroup,
-  FormControl
+  FormControl,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { exportToCSV, exportToPDF, makeResolveOwner } from '../../lib/exportHelpers';
@@ -30,8 +32,25 @@ import toast from 'react-hot-toast';
  * @param {function} props.onClose - Function to close dialog
  * @param {Object|null} props.db - Database instance
  */
+const dateRowSx = {
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  gap: 1,
+  mb: 3,
+  width: '100%',
+  minWidth: 0,
+};
+
+const dateFieldSx = {
+  flex: { sm: 1 },
+  minWidth: 0,
+  width: { xs: '100%', sm: 'auto' },
+};
+
 export default function ExportDialog({ open, onClose, db }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [exportFormat, setExportFormat] = useState('csv');
   const [startDate, setStartDate] = useState(function() {
     const date = new Date();
@@ -153,9 +172,30 @@ export default function ExportDialog({ open, onClose, db }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen}
+      scroll="paper"
+      PaperProps={{
+        sx: fullScreen
+          ? {}
+          : {
+              mx: { xs: 1, sm: 2 },
+              maxWidth: { xs: 'calc(100vw - 16px)', sm: theme.breakpoints.values.sm },
+              width: '100%',
+            },
+      }}
+    >
       <DialogTitle>{t('export.title')}</DialogTitle>
-      <DialogContent>
+      <DialogContent
+        sx={{
+          overflowX: 'hidden',
+          px: { xs: 2, sm: 3 },
+        }}
+      >
         <Box sx={{ pt: 2 }}>
           <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
@@ -173,8 +213,9 @@ export default function ExportDialog({ open, onClose, db }) {
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
             {t('common.dateRange')}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+          <Box sx={dateRowSx}>
             <TextField
+              sx={dateFieldSx}
               label={t('common.year')}
               type="number"
               value={startDate.year}
@@ -182,6 +223,7 @@ export default function ExportDialog({ open, onClose, db }) {
               size="small"
             />
             <TextField
+              sx={dateFieldSx}
               label={t('common.month')}
               type="number"
               value={startDate.month}
@@ -190,6 +232,7 @@ export default function ExportDialog({ open, onClose, db }) {
               inputProps={{ min: 1, max: 12 }}
             />
             <TextField
+              sx={dateFieldSx}
               label={t('common.day')}
               type="number"
               value={startDate.day}
@@ -199,8 +242,9 @@ export default function ExportDialog({ open, onClose, db }) {
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+          <Box sx={dateRowSx}>
             <TextField
+              sx={dateFieldSx}
               label={t('common.year')}
               type="number"
               value={endDate.year}
@@ -208,6 +252,7 @@ export default function ExportDialog({ open, onClose, db }) {
               size="small"
             />
             <TextField
+              sx={dateFieldSx}
               label={t('common.month')}
               type="number"
               value={endDate.month}
@@ -216,6 +261,7 @@ export default function ExportDialog({ open, onClose, db }) {
               inputProps={{ min: 1, max: 12 }}
             />
             <TextField
+              sx={dateFieldSx}
               label={t('common.day')}
               type="number"
               value={endDate.day}
@@ -249,7 +295,16 @@ export default function ExportDialog({ open, onClose, db }) {
           </FormGroup>
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions
+        sx={{
+          flexWrap: 'wrap',
+          gap: 1,
+          px: { xs: 2, sm: 3 },
+          py: 2,
+          justifyContent: { xs: 'stretch', sm: 'flex-end' },
+          '& > button': { xs: { flex: '1 1 auto', minWidth: 0 } },
+        }}
+      >
         <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button onClick={handleExport} variant="contained" disabled={loading}>
           {loading ? t('export.exporting') : t('export.exportButton')}
