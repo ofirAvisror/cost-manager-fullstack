@@ -96,19 +96,51 @@ export default function ReportView({ db }) {
     return Number.isFinite(num) ? num : 0;
   };
 
+  const summaryPaperSx = {
+    p: { xs: 2, sm: 2.5 },
+    height: '100%',
+    boxSizing: 'border-box',
+    borderRadius: 2,
+    boxShadow: 2,
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
+  };
+
+  const summaryAmountSx = {
+    fontWeight: 700,
+    fontSize: { xs: '0.95rem', sm: '1.5rem' },
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
+    hyphens: 'auto',
+  };
+
   return (
     <Card 
       sx={{ 
-        maxWidth: 1200, 
-        mx: 'auto', 
+        maxWidth: { xs: '100%', md: 1200 }, 
+        width: '100%',
+        mx: 'auto',
+        boxSizing: 'border-box',
         borderRadius: 3,
         boxShadow: 4,
         bgcolor: 'background.paper',
+        minWidth: 0,
+        overflowX: 'hidden',
       }}
     >
-      <CardContent sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 }, maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, minWidth: 0 }}>
+          <Typography
+            variant="h4"
+            component="h2"
+            sx={{
+              fontWeight: 700,
+              color: 'text.primary',
+              fontSize: { xs: '1.35rem', sm: '2rem' },
+              wordBreak: 'break-word',
+            }}
+          >
             {t('report.title')}
           </Typography>
         </Box>
@@ -116,24 +148,39 @@ export default function ReportView({ db }) {
         <Paper 
           elevation={0}
           sx={{ 
-            p: 3, 
+            p: { xs: 2, sm: 3 }, 
             mb: 3, 
             bgcolor: 'background.paper',
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
           }}
         >
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              flexWrap: 'wrap',
+              alignItems: { xs: 'stretch', sm: 'center' },
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
         <TextField
           label={t('common.year')}
           type="number"
           value={year}
           onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
           inputProps={{ min: 2000, max: 2100 }}
+          sx={{ width: { xs: '100%', sm: 120 }, minWidth: 0, flexShrink: 0 }}
         />
 
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ minWidth: 0, width: { xs: '100%', sm: 160 }, flexShrink: 0 }}>
           <InputLabel>{t('common.month')}</InputLabel>
           <Select
             value={month}
@@ -148,7 +195,7 @@ export default function ReportView({ db }) {
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: 120 }}>
+        <FormControl sx={{ minWidth: 0, width: { xs: '100%', sm: 130 }, flexShrink: 0 }}>
           <InputLabel>{t('common.currency')}</InputLabel>
           <Select
             value={currency}
@@ -170,6 +217,8 @@ export default function ReportView({ db }) {
                 borderRadius: 2,
                 px: 3,
                 py: 1.5,
+                width: { xs: '100%', sm: 'auto' },
+                alignSelf: { xs: 'stretch', sm: 'center' },
                 background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                 boxShadow: 3,
                 '&:hover': {
@@ -187,102 +236,113 @@ export default function ReportView({ db }) {
 
         {report && (
           <Fade in={!!report} timeout={500}>
-            <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: 'space-between',
+                    mb: 3,
+                    gap: 2,
+                    width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                  }}
+                >
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    fontSize: { xs: '1.1rem', sm: '1.5rem' },
+                    wordBreak: 'break-word',
+                    minWidth: 0,
+                  }}
+                >
                   {t('report.reportFor', { month: monthNames[month - 1], year: year })}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    alignItems: 'center',
+                    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+                    minWidth: 0,
+                  }}
+                >
                   <Chip 
                     label={`${report.expenses.length + report.incomes.length + report.savings.deposits.length + report.savings.withdrawals.length} ${t('common.items')}`}
                     color="primary"
-                    sx={{ fontWeight: 600 }}
+                    sx={{ fontWeight: 600, maxWidth: '100%' }}
                   />
                   <Button
                     variant="outlined"
                     startIcon={<FileDownloadIcon />}
                     onClick={() => setExportDialogOpen(true)}
                     size="small"
+                    sx={{ flexShrink: 0 }}
                   >
                     {t('common.export')}
                   </Button>
                 </Box>
               </Box>
 
-              {/* Summary Cards */}
-              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <Paper
-                  elevation={0}
-                  sx={{ 
-                    p: 2.5, 
-                    flex: 1,
-                    minWidth: 200,
-                    bgcolor: 'error.light',
-                    borderRadius: 2,
-                    boxShadow: 2,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: 'error.contrastText', mb: 0.5, opacity: 0.9 }}>
+              {/* Summary cards: CSS grid avoids MUI Grid negative margins (mobile horizontal scroll) */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr)',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    md: 'repeat(4, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                  mb: 3,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                }}
+              >
+                <Paper elevation={0} sx={{ ...summaryPaperSx, bgcolor: 'error.light' }}>
+                  <Typography variant="body2" sx={{ color: 'error.contrastText', mb: 0.5, opacity: 0.9, overflowWrap: 'anywhere' }}>
                     {t('report.totalExpenses')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: 'error.contrastText', fontWeight: 700 }}>
+                  <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'error.contrastText' }}>
                     {report.totals.expenses.toFixed(2)} {report.totals.currency}
                   </Typography>
                 </Paper>
 
-                <Paper
-                  elevation={0}
-                  sx={{ 
-                    p: 2.5, 
-                    flex: 1,
-                    minWidth: 200,
-                    bgcolor: 'success.light',
-                    borderRadius: 2,
-                    boxShadow: 2,
-                  }}
-                >
+                <Paper elevation={0} sx={{ ...summaryPaperSx, bgcolor: 'success.light' }}>
                   <Typography variant="body2" sx={{ color: 'success.contrastText', mb: 0.5, opacity: 0.9 }}>
                     {t('report.totalIncomes')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: 'success.contrastText', fontWeight: 700 }}>
+                  <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'success.contrastText' }}>
                     {report.totals.incomes.toFixed(2)} {report.totals.currency}
                   </Typography>
                 </Paper>
 
-                <Paper
-                  elevation={0}
-                  sx={{ 
-                    p: 2.5, 
-                    flex: 1,
-                    minWidth: 200,
-                    bgcolor: 'info.light',
-                    borderRadius: 2,
-                    boxShadow: 2,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: 'info.contrastText', mb: 0.5, opacity: 0.9 }}>
+                <Paper elevation={0} sx={{ ...summaryPaperSx, bgcolor: 'info.light' }}>
+                  <Typography variant="body2" sx={{ color: 'info.contrastText', mb: 0.5, opacity: 0.9, overflowWrap: 'anywhere' }}>
                     {t('report.totalSavings')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: 'info.contrastText', fontWeight: 700 }}>
+                  <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'info.contrastText' }}>
                     {report.totals.savings.toFixed(2)} {report.totals.currency}
                   </Typography>
                 </Paper>
 
                 <Paper
                   elevation={0}
-                  sx={{ 
-                    p: 2.5, 
-                    flex: 1,
-                    minWidth: 200,
+                  sx={{
+                    ...summaryPaperSx,
                     bgcolor: report.totals.balance >= 0 ? 'success.main' : 'error.main',
-                    borderRadius: 2,
-                    boxShadow: 2,
                   }}
                 >
                   <Typography variant="body2" sx={{ color: 'white', mb: 0.5, opacity: 0.9 }}>
                     {t('report.balance')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: 'white', fontWeight: 700 }}>
+                  <Typography variant="h5" sx={{ ...summaryAmountSx, color: 'white' }}>
                     {report.totals.balance.toFixed(2)} {report.totals.currency}
                   </Typography>
                 </Paper>
@@ -308,7 +368,7 @@ export default function ReportView({ db }) {
                 <>
                   {/* Expenses Table */}
                   {report.expenses.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
+                    <Box sx={{ mb: 3, minWidth: 0, maxWidth: '100%' }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         {t('report.expenses')}
                       </Typography>
@@ -320,9 +380,13 @@ export default function ReportView({ db }) {
                           border: '1px solid',
                           borderColor: 'divider',
                           bgcolor: 'background.paper',
+                          overflowX: 'auto',
+                          width: '100%',
+                          maxWidth: '100%',
+                          WebkitOverflowScrolling: 'touch',
                         }}
                       >
-                        <Table>
+                        <Table size="small" sx={{ minWidth: { xs: 0, sm: 520 } }}>
                           <TableHead>
                             <TableRow sx={{ bgcolor: 'error.main' }}>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.day')}</TableCell>
@@ -362,7 +426,7 @@ export default function ReportView({ db }) {
 
                   {/* Incomes Table */}
                   {report.incomes.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
+                    <Box sx={{ mb: 3, minWidth: 0, maxWidth: '100%' }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         {t('report.incomes')}
                       </Typography>
@@ -374,9 +438,13 @@ export default function ReportView({ db }) {
                           border: '1px solid',
                           borderColor: 'divider',
                           bgcolor: 'background.paper',
+                          overflowX: 'auto',
+                          width: '100%',
+                          maxWidth: '100%',
+                          WebkitOverflowScrolling: 'touch',
                         }}
                       >
-                        <Table>
+                        <Table size="small" sx={{ minWidth: { xs: 0, sm: 520 } }}>
                           <TableHead>
                             <TableRow sx={{ bgcolor: 'success.main' }}>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.day')}</TableCell>
@@ -416,7 +484,7 @@ export default function ReportView({ db }) {
 
                   {/* Savings Table */}
                   {(report.savings.deposits.length > 0 || report.savings.withdrawals.length > 0) && (
-                    <Box sx={{ mb: 3 }}>
+                    <Box sx={{ mb: 3, minWidth: 0, maxWidth: '100%' }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         {t('report.savings')}
                       </Typography>
@@ -428,9 +496,13 @@ export default function ReportView({ db }) {
                           border: '1px solid',
                           borderColor: 'divider',
                           bgcolor: 'background.paper',
+                          overflowX: 'auto',
+                          width: '100%',
+                          maxWidth: '100%',
+                          WebkitOverflowScrolling: 'touch',
                         }}
                       >
-                        <Table>
+                        <Table size="small" sx={{ minWidth: { xs: 0, sm: 560 } }}>
                           <TableHead>
                             <TableRow sx={{ bgcolor: 'info.main' }}>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.day')}</TableCell>

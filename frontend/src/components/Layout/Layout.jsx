@@ -42,7 +42,7 @@ export default function Layout({
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative', maxWidth: '100vw', overflowX: 'hidden' }}>
       <Header 
         onMenuClick={handleMenuClick} 
         notificationCount={notificationCount}
@@ -66,7 +66,11 @@ export default function Layout({
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          flexShrink: 1,
+          minWidth: 0,
+          maxWidth: '100%',
+          overflowX: 'hidden',
+          p: { xs: 1.5, sm: 2, md: 3 },
           width: { 
             md: sidebarOpen 
               ? `calc(100% - ${drawerWidth}px)` 

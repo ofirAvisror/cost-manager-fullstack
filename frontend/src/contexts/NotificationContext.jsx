@@ -58,16 +58,33 @@ export function NotificationProvider({ children }) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  /** Keeps ref in sync immediately so checkBudgets (interval/async) never re-adds before paint. */
+  const addDismissedIds = function(ids) {
+    setDismissedNotifications(function(prev) {
+      const newSet = new Set(prev);
+      ids.forEach(function(id) {
+        newSet.add(id);
+      });
+      dismissedNotificationsRef.current = newSet;
+      return newSet;
+    });
+  };
+
   const markAsRead = function(id) {
     setNotifications(function(prev) {
       return prev.map(function(n) {
         return n.id === id ? { ...n, read: true } : n;
       });
     });
+    addDismissedIds([id]);
   };
 
   const markAllAsRead = function() {
     setNotifications(function(prev) {
+      const ids = prev.map(function(n) {
+        return n.id;
+      });
+      addDismissedIds(ids);
       return prev.map(function(n) {
         return { ...n, read: true };
       });
@@ -80,24 +97,14 @@ export function NotificationProvider({ children }) {
         return n.id !== id;
       });
     });
-    // Add to dismissed notifications so it doesn't reappear
-    setDismissedNotifications(function(prev) {
-      const newSet = new Set(prev);
-      newSet.add(id);
-      return newSet;
-    });
+    addDismissedIds([id]);
   };
 
   const clearAll = function() {
     setNotifications(function(prev) {
-      // Add all current notifications to dismissed set
-      setDismissedNotifications(function(dismissed) {
-        const newSet = new Set(dismissed);
-        prev.forEach(function(n) {
-          newSet.add(n.id);
-        });
-        return newSet;
-      });
+      addDismissedIds(prev.map(function(n) {
+        return n.id;
+      }));
       return [];
     });
   };
