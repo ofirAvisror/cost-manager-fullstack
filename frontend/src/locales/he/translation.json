@@ -234,7 +234,9 @@
   "export": {
     "title": "ייצוא נתונים",
     "exporting": "מייצא...",
-    "exportButton": "ייצא"
+    "exportButton": "ייצא",
+    "pdfGeneratedPrefix": "נוצר: ",
+    "pdfTotalPrefix": "סה\"כ: "
   },
   "auth": {
     "createAccount": "יצירת חשבון",

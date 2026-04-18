@@ -234,7 +234,9 @@
   "export": {
     "title": "Export Data",
     "exporting": "Exporting...",
-    "exportButton": "Export"
+    "exportButton": "Export",
+    "pdfGeneratedPrefix": "Generated: ",
+    "pdfTotalPrefix": "Total: "
   },
   "auth": {
     "createAccount": "Create account",

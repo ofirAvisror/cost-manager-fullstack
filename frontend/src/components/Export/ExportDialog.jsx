@@ -98,6 +98,10 @@ export default function ExportDialog({ open, onClose, db }) {
             amount: t('common.amount'),
             currency: t('common.currency'),
           },
+          pdfStrings: {
+            generatedPrefix: t('export.pdfGeneratedPrefix'),
+            totalPrefix: t('export.pdfTotalPrefix'),
+          },
         });
         toast.success(t('messages.dataExportedPDF'));
       }

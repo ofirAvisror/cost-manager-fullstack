@@ -10,6 +10,8 @@ import notoSansHebrewFontBase64 from './notoSansHebrewFontBase64';
 /** jsPDF built-in fonts have no Hebrew glyphs — text becomes mojibake without a Unicode font. */
 const HEBREW_PDF_FONT = 'NotoSansHebrew';
 const HEBREW_FONT_FILE = 'NotoSansHebrew-Regular.ttf';
+/** Noto Sans Hebrew subset often has no Latin digits / ISO currency codes — use built-in font for those cells. */
+const LATIN_PDF_FONT = 'helvetica';
 
 const bidi = bidiFactory();
 
@@ -42,7 +44,10 @@ function registerHebrewFont(doc) {
   doc.setFont(HEBREW_PDF_FONT, 'normal');
 }
 
-const DEFAULT_COLUMN_ORDER = ['date', 'category', 'description', 'amount', 'currency'];
+/**
+ * PDF table is drawn LTR; for Hebrew reading order put date on the right (last column).
+ */
+const PDF_COLUMN_ORDER = ['category', 'description', 'amount', 'currency', 'date'];
 
 const DEFAULT_COLUMN_LABELS = {
   date: 'Date',
@@ -52,14 +57,42 @@ const DEFAULT_COLUMN_LABELS = {
   currency: 'Currency',
 };
 
-/** Landscape A4 inner width minus default margins (14mm each side). */
+/** Landscape A4 — keep amount/currency narrow like other data columns. */
 const COL_WIDTH_MM = {
-  date: 30,
-  category: 40,
-  description: 88,
-  amount: 28,
-  currency: 22,
+  date: 26,
+  category: 36,
+  description: 78,
+  amount: 22,
+  currency: 20,
 };
+
+/**
+ * @param {string[]} selectedIds
+ * @returns {string[]}
+ */
+function orderColumnIdsForPdf(selectedIds) {
+  const set = new Set(selectedIds);
+  return PDF_COLUMN_ORDER.filter(function(id) {
+    return set.has(id);
+  });
+}
+
+/**
+ * Hebrew label (Noto) immediately followed by Latin digits (Helvetica).
+ * @param {import('jspdf').jsPDF} doc
+ * @param {number} xMm
+ * @param {number} yMm
+ * @param {string} hebrewPrefix
+ * @param {string} latinSuffix
+ */
+function drawHebrewPrefixThenLatin(doc, xMm, yMm, hebrewPrefix, latinSuffix) {
+  doc.setFont(HEBREW_PDF_FONT, 'normal');
+  const hp = textForPdfLtrDraw(hebrewPrefix);
+  const wMm = doc.getTextWidth(hp);
+  doc.text(hp, xMm, yMm);
+  doc.setFont(LATIN_PDF_FONT, 'normal');
+  doc.text(String(latinSuffix), xMm + wMm, yMm);
+}
 
 /**
  * Exports costs to CSV format
@@ -74,7 +107,7 @@ export function exportToCSV(costs, filename = 'costs-export.csv') {
       cost.category,
       cost.description,
       cost.sum.toString(),
-      cost.currency
+      cost.currency,
     ];
   });
 
@@ -107,8 +140,9 @@ export function exportToCSV(costs, filename = 'costs-export.csv') {
 
 /**
  * @typedef {Object} ExportPdfOptions
- * @property {string[]} [columns] - Column ids in order (default: all five)
+ * @property {string[]} [columns] - Column ids (PDF visual order is normalized: date rightmost)
  * @property {Record<string, string>} [columnLabels] - i18n labels per column id
+ * @property {{ generatedPrefix?: string, totalPrefix?: string }} [pdfStrings] - Hebrew/Latin split lines
  */
 
 /**
@@ -118,8 +152,13 @@ export function exportToCSV(costs, filename = 'costs-export.csv') {
  */
 function cellForColumn(cost, columnId) {
   switch (columnId) {
-    case 'date':
-      return `${cost.date.year}-${cost.date.month}-${cost.date.day}`;
+    case 'date': {
+      const d = cost && cost.date;
+      if (d && d.year != null && d.month != null && d.day != null) {
+        return `${d.year}-${d.month}-${d.day}`;
+      }
+      return '';
+    }
     case 'category':
       return textForPdfLtrDraw(cost.category != null ? String(cost.category) : '');
     case 'description':
@@ -142,10 +181,14 @@ function cellForColumn(cost, columnId) {
  */
 export async function exportToPDF(costs, title = 'Costs Report', filename = 'costs-export.pdf', options) {
   const opts = options || {};
-  const columnIds = Array.isArray(opts.columns) && opts.columns.length > 0
+  const rawColumnIds = Array.isArray(opts.columns) && opts.columns.length > 0
     ? opts.columns
-    : DEFAULT_COLUMN_ORDER.slice();
+    : PDF_COLUMN_ORDER.slice();
+  const columnIds = orderColumnIdsForPdf(rawColumnIds);
   const labels = { ...DEFAULT_COLUMN_LABELS, ...(opts.columnLabels || {}) };
+  const pdfStrings = opts.pdfStrings || {};
+  const generatedPrefix = pdfStrings.generatedPrefix != null ? pdfStrings.generatedPrefix : 'Generated: ';
+  const totalPrefix = pdfStrings.totalPrefix != null ? pdfStrings.totalPrefix : 'Total: ';
 
   const margin = 14;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -159,7 +202,12 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
   doc.text(textForPdfLtrDraw(title), pageWidth - margin, 22, { align: 'right' });
 
   doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
+  if (/[\u0590-\u05FF]/.test(generatedPrefix)) {
+    drawHebrewPrefixThenLatin(doc, margin, 30, generatedPrefix, new Date().toLocaleDateString());
+  } else {
+    doc.setFont(LATIN_PDF_FONT, 'normal');
+    doc.text(`${generatedPrefix}${new Date().toLocaleDateString()}`, margin, 30);
+  }
 
   const head = [columnIds.map(function(id) {
     return textForPdfLtrDraw(labels[id] || DEFAULT_COLUMN_LABELS[id] || id);
@@ -173,8 +221,16 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
 
   const columnStyles = {};
   columnIds.forEach(function(id, index) {
-    columnStyles[index] = { cellWidth: COL_WIDTH_MM[id] || 28 };
+    const useLatinFont = id === 'date' || id === 'amount' || id === 'currency';
+    columnStyles[index] = {
+      cellWidth: COL_WIDTH_MM[id] || 22,
+      ...(useLatinFont ? { font: LATIN_PDF_FONT, fontStyle: 'normal' } : {}),
+    };
   });
+
+  const tableWidthMm = columnIds.reduce(function(sum, id) {
+    return sum + (COL_WIDTH_MM[id] || 22);
+  }, 0);
 
   autoTable(doc, {
     head: head,
@@ -195,7 +251,7 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
       fontStyle: 'normal',
     },
     columnStyles: columnStyles,
-    tableWidth: 'auto',
+    tableWidth: tableWidthMm,
   });
 
   const total = costs.reduce(function(sum, cost) {
@@ -204,8 +260,12 @@ export async function exportToPDF(costs, title = 'Costs Report', filename = 'cos
   }, 0);
   const finalY = doc.lastAutoTable.finalY || 36;
   doc.setFontSize(12);
-  doc.setFont(HEBREW_PDF_FONT, 'normal');
-  doc.text(`Total: ${total.toFixed(2)}`, margin, finalY + 10);
+  if (/[\u0590-\u05FF]/.test(totalPrefix)) {
+    drawHebrewPrefixThenLatin(doc, margin, finalY + 10, totalPrefix, total.toFixed(2));
+  } else {
+    doc.setFont(LATIN_PDF_FONT, 'normal');
+    doc.text(`${totalPrefix}${total.toFixed(2)}`, margin, finalY + 10);
+  }
 
   doc.save(filename);
 }
