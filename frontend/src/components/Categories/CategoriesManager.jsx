@@ -36,7 +36,9 @@ import {
   getExpenseLineAmount,
   getHouseholdExpenseKind,
   householdExpenseRowSx,
+  canUserMutateCost,
 } from '../../lib/expenseDisplay';
+import EditCostDialog from '../EditCostDialog';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -84,6 +86,8 @@ export default function CategoriesManager({ db }) {
   const [categoryDetailsOpen, setCategoryDetailsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categoryCosts, setCategoryCosts] = useState([]);
+  const [editingCost, setEditingCost] = useState(null);
+  const [deleteCostTarget, setDeleteCostTarget] = useState(null);
   const [categoryTotal, setCategoryTotal] = useState({
     USD: 0,
     ILS: 0,
@@ -344,12 +348,53 @@ export default function CategoriesManager({ db }) {
     setCategoryDetailsOpen(false);
     setSelectedCategory('');
     setCategoryCosts([]);
+    setEditingCost(null);
+    setDeleteCostTarget(null);
     setCategoryTotal({
       USD: 0,
       ILS: 0,
       GBP: 0,
       EURO: 0
     });
+  };
+
+  const reloadOpenCategoryCosts = async function() {
+    if (!db || !selectedCategory) return;
+    try {
+      const costs = await db.getCostsByCategory(selectedCategory);
+      setCategoryCosts(costs);
+      const totals = {
+        USD: 0,
+        ILS: 0,
+        GBP: 0,
+        EURO: 0
+      };
+      costs.forEach(function (cost) {
+        const typ = cost.type || 'expense';
+        if (typ === 'expense') {
+          totals[cost.currency] += getExpenseLineAmount(cost, viewScope, perspectiveUserId);
+        } else {
+          totals[cost.currency] += cost.sum;
+        }
+      });
+      setCategoryTotal(totals);
+      loadCategories();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleConfirmDeleteCost = async function() {
+    if (!db || !deleteCostTarget || !deleteCostTarget.id) return;
+    try {
+      await db.deleteCost(deleteCostTarget.id);
+      toast.success(t('messages.costDeleted'));
+      setDeleteCostTarget(null);
+      await reloadOpenCategoryCosts();
+    } catch (error) {
+      const extra = error instanceof Error ? error.message : '';
+      toast.error(t('messages.failedToDelete') + (extra ? ': ' + extra : ''));
+    }
   };
 
   if (!db) {
@@ -658,6 +703,7 @@ export default function CategoriesManager({ db }) {
                       <TableCell sx={{ fontWeight: 600 }}>{t('common.description')}</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>{t('common.amount')}</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{t('common.currency')}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, width: 108 }} />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -691,6 +737,27 @@ export default function CategoriesManager({ db }) {
                           <TableCell>
                             <Chip label={cost.currency} size="small" color="primary" variant="outlined" />
                           </TableCell>
+                          <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                            {cost.id && canUserMutateCost(cost, myUserId) ? (
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.25 }}>
+                                <IconButton
+                                  size="small"
+                                  aria-label={t('common.edit')}
+                                  onClick={() => setEditingCost(cost)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  aria-label={t('common.delete')}
+                                  onClick={() => setDeleteCostTarget(cost)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            ) : null}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -702,6 +769,27 @@ export default function CategoriesManager({ db }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseCategoryDetails}>{t('common.close')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      <EditCostDialog
+        open={Boolean(editingCost)}
+        cost={editingCost}
+        db={db}
+        onClose={() => setEditingCost(null)}
+        onSaved={reloadOpenCategoryCosts}
+      />
+
+      <Dialog open={Boolean(deleteCostTarget)} onClose={() => setDeleteCostTarget(null)}>
+        <DialogTitle>{t('common.delete')}</DialogTitle>
+        <DialogContent>
+          <Typography>{t('messages.deleteCostConfirm')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteCostTarget(null)}>{t('common.cancel')}</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDeleteCost}>
+            {t('common.delete')}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

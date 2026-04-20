@@ -2,7 +2,7 @@ const Cost = require('../models/Cost');
 const User = require('../models/User');
 const { logger } = require('../config/logger');
 const { costOwnerMatchForView } = require('../utils/household');
-const { computeNextOccurrence, processDueRecurringSchedules } = require('./recurring.service');
+const { computeNextOccurrence, processDueRecurringSchedules, invalidateReportCachesForMonth } = require('./recurring.service');
 
 const EXPENSE_CATEGORIES = ['food', 'health', 'housing', 'sports', 'education'];
 const INCOME_CATEGORIES = ['salary', 'freelance', 'investment', 'business', 'gift', 'other'];
@@ -330,6 +330,141 @@ async function getCostById(id) {
   return cost;
 }
 
+function canActorMutateCost(actorUserId, cost) {
+  const actorId = parseInt(actorUserId, 10);
+  if (!Number.isFinite(actorId)) return false;
+  if (cost.owner_userid === actorId) return true;
+  if (cost.is_shared && cost.shared_with_userid === actorId) return true;
+  return false;
+}
+
+async function invalidateReportCachesForCostParties(date, costLike) {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return;
+  const ids = new Set();
+  [costLike.owner_userid, costLike.userid, costLike.shared_with_userid].forEach((x) => {
+    if (x == null || x === '') return;
+    const n = parseInt(x, 10);
+    if (Number.isFinite(n)) ids.add(n);
+  });
+  for (const uid of ids) {
+    await invalidateReportCachesForMonth(uid, d);
+  }
+}
+
+/**
+ * Update a regular (non schedule_only) cost. Actor must be owner or shared partner.
+ */
+async function updateCost(id, updates, actorUserId) {
+  if (!id) throw new Error('Cost ID is required');
+  const cost = await Cost.findById(id);
+  if (!cost) throw new Error('Cost not found');
+  if (cost.schedule_only) {
+    throw new Error('Cannot edit recurring schedule templates with this action');
+  }
+  if (!canActorMutateCost(actorUserId, cost)) {
+    throw new Error('Not allowed to edit this cost');
+  }
+
+  const prevCreated = new Date(cost.created_at);
+  const partySnapshot = {
+    owner_userid: cost.owner_userid,
+    userid: cost.userid,
+    shared_with_userid: cost.shared_with_userid,
+  };
+
+  if (updates.description !== undefined) {
+    cost.description = String(updates.description).trim();
+    if (!cost.description) throw new Error('description cannot be empty');
+  }
+  if (updates.category !== undefined) {
+    cost.category = String(updates.category).trim().toLowerCase();
+    if (!cost.category) throw new Error('category cannot be empty');
+    if (cost.category.length > 64) throw new Error('category is too long');
+  }
+  if (updates.sum !== undefined) {
+    const s = typeof updates.sum === 'string' ? parseFloat(updates.sum) : Number(updates.sum);
+    if (Number.isNaN(s) || s <= 0) throw new Error('sum must be a positive number');
+    cost.sum = s;
+  }
+  if (updates.currency !== undefined) {
+    let c = String(updates.currency).trim().toUpperCase();
+    if (c === 'EURO') c = 'EUR';
+    if (!['ILS', 'USD', 'EUR'].includes(c)) {
+      throw new Error('currency must be one of: ILS, USD, EUR, EURO');
+    }
+    cost.currency = c;
+  }
+  if (updates.created_at !== undefined) {
+    const costDate = new Date(updates.created_at);
+    if (isNaN(costDate.getTime())) throw new Error('created_at must be a valid date');
+    cost.created_at = costDate;
+  }
+  if (updates.type !== undefined) {
+    const nt = String(updates.type).trim().toLowerCase();
+    if (!['income', 'expense'].includes(nt)) {
+      throw new Error('type must be either "income" or "expense"');
+    }
+    cost.type = nt;
+    if (nt === 'income') {
+      cost.payment_method = undefined;
+    }
+  }
+  if (updates.payment_method !== undefined) {
+    if (cost.type !== 'expense') {
+      throw new Error('payment_method is only allowed for expense costs');
+    }
+    const pm = String(updates.payment_method).trim().toLowerCase();
+    if (!['credit_card', 'cash', 'bit', 'check'].includes(pm)) {
+      throw new Error('Invalid payment_method');
+    }
+    cost.payment_method = pm;
+  }
+  if (updates.tags !== undefined) {
+    if (!Array.isArray(updates.tags)) {
+      throw new Error('tags must be an array of strings');
+    }
+    cost.tags = updates.tags
+      .filter((tag) => typeof tag === 'string' && tag.trim().length > 0)
+      .map((tag) => tag.trim());
+  }
+
+  await cost.save();
+  logger.info(`Cost updated: ${id} by user ${actorUserId}`);
+
+  await invalidateReportCachesForCostParties(prevCreated, partySnapshot);
+  await invalidateReportCachesForCostParties(cost.created_at, cost);
+
+  return cost;
+}
+
+/**
+ * Delete a regular (non schedule_only) cost.
+ */
+async function deleteCost(id, actorUserId) {
+  if (!id) throw new Error('Cost ID is required');
+  const cost = await Cost.findById(id);
+  if (!cost) throw new Error('Cost not found');
+  if (cost.schedule_only) {
+    throw new Error('Use the recurring schedule delete endpoint for templates');
+  }
+  if (!canActorMutateCost(actorUserId, cost)) {
+    throw new Error('Not allowed to delete this cost');
+  }
+
+  const partySnapshot = {
+    owner_userid: cost.owner_userid,
+    userid: cost.userid,
+    shared_with_userid: cost.shared_with_userid,
+  };
+  const created = cost.created_at;
+
+  await Cost.findByIdAndDelete(id);
+  logger.info(`Cost deleted: ${id} by user ${actorUserId}`);
+
+  await invalidateReportCachesForCostParties(created, partySnapshot);
+}
+
 /**
  * Delete a recurring schedule template (schedule_only). Regular costs cannot be removed here.
  */
@@ -352,6 +487,8 @@ module.exports = {
   createCost,
   getCosts,
   getCostById,
+  updateCost,
+  deleteCost,
   deleteScheduleCost,
   EXPENSE_CATEGORIES,
   INCOME_CATEGORIES

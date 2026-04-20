@@ -22,7 +22,12 @@ import {
   Card,
   CardContent,
   Chip,
-  Fade
+  Fade,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../contexts/HouseholdViewContext';
@@ -32,10 +37,14 @@ import {
   getExpenseLineAmount,
   getHouseholdExpenseKind,
   householdExpenseRowSx,
+  canUserMutateCost,
 } from '../lib/expenseDisplay';
 import ExportDialog from './Export/ExportDialog';
+import EditCostDialog from './EditCostDialog';
 import toast from 'react-hot-toast';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 /**
  * ReportView component
@@ -55,6 +64,8 @@ export default function ReportView({ db }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [editingCost, setEditingCost] = useState(null);
+  const [deleteCostTarget, setDeleteCostTarget] = useState(null);
 
   useEffect(
     function resetReportOnScopeChange() {
@@ -66,11 +77,13 @@ export default function ReportView({ db }) {
   /**
    * Fetches and displays the report
    */
-  const handleGetReport = async function() {
+  const handleGetReport = async function(opts) {
     if (!db) {
       toast.error(t('messages.databaseNotInitialized'));
       return;
     }
+
+    const silent = opts && opts.silent === true;
 
     setLoading(true);
     setReport(null);
@@ -78,11 +91,27 @@ export default function ReportView({ db }) {
     try {
       const result = await db.getReport(year, month, currency);
       setReport(result);
-      toast.success(t('messages.reportGenerated'));
+      if (!silent) {
+        toast.success(t('messages.reportGenerated'));
+      }
     } catch (error) {
       toast.error(t('messages.failedToGet') + ' report: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteCost = async function() {
+    if (!db || !deleteCostTarget || !deleteCostTarget.id) return;
+    try {
+      await db.deleteCost(deleteCostTarget.id);
+      toast.success(t('messages.costDeleted'));
+      setDeleteCostTarget(null);
+      setEditingCost(null);
+      await handleGetReport({ silent: true });
+    } catch (error) {
+      const extra = error instanceof Error ? error.message : '';
+      toast.error(t('messages.failedToDelete') + (extra ? ': ' + extra : ''));
     }
   };
 
@@ -248,7 +277,7 @@ export default function ReportView({ db }) {
 
             <Button
               variant="contained"
-              onClick={handleGetReport}
+              onClick={() => handleGetReport()}
               disabled={!db || loading}
               sx={{
                 borderRadius: 2,
@@ -477,6 +506,7 @@ export default function ReportView({ db }) {
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.currency')}</TableCell>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.category')}</TableCell>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.description')}</TableCell>
+                              <TableCell align="right" sx={{ color: 'white', fontWeight: 600, width: 108 }} />
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -488,7 +518,7 @@ export default function ReportView({ db }) {
                               const lineAmt = getExpenseLineAmount(cost, viewScope, perspectiveUserId);
                               return (
                                 <TableRow
-                                  key={index}
+                                  key={cost.id || `exp-${index}`}
                                   sx={{
                                     '&:hover': { bgcolor: 'action.selected' },
                                     ...(rowKind
@@ -507,6 +537,27 @@ export default function ReportView({ db }) {
                                   </TableCell>
                                   <TableCell>{cost.category}</TableCell>
                                   <TableCell>{cost.description}</TableCell>
+                                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                                    {cost.id && canUserMutateCost(cost, myUserId) ? (
+                                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.25 }}>
+                                        <IconButton
+                                          size="small"
+                                          aria-label={t('common.edit')}
+                                          onClick={() => setEditingCost(cost)}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          aria-label={t('common.delete')}
+                                          onClick={() => setDeleteCostTarget(cost)}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    ) : null}
+                                  </TableCell>
                                 </TableRow>
                               );
                             })}
@@ -544,12 +595,13 @@ export default function ReportView({ db }) {
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.currency')}</TableCell>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.category')}</TableCell>
                               <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.description')}</TableCell>
+                              <TableCell align="right" sx={{ color: 'white', fontWeight: 600, width: 108 }} />
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {report.incomes.map((income, index) => (
                               <TableRow 
-                                key={index}
+                                key={income.id || `inc-${index}`}
                                 sx={{ 
                                   '&:nth-of-type(odd)': { bgcolor: 'action.hover' },
                                   '&:hover': { bgcolor: 'action.selected' },
@@ -566,6 +618,27 @@ export default function ReportView({ db }) {
                                 </TableCell>
                                 <TableCell>{income.category}</TableCell>
                                 <TableCell>{income.description}</TableCell>
+                                <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                                  {income.id && canUserMutateCost(income, myUserId) ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.25 }}>
+                                      <IconButton
+                                        size="small"
+                                        aria-label={t('common.edit')}
+                                        onClick={() => setEditingCost(income)}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        aria-label={t('common.delete')}
+                                        onClick={() => setDeleteCostTarget(income)}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </Box>
+                                  ) : null}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -666,6 +739,27 @@ export default function ReportView({ db }) {
         )}
       </CardContent>
       
+      <EditCostDialog
+        open={Boolean(editingCost)}
+        cost={editingCost}
+        db={db}
+        onClose={() => setEditingCost(null)}
+        onSaved={() => handleGetReport({ silent: true })}
+      />
+
+      <Dialog open={Boolean(deleteCostTarget)} onClose={() => setDeleteCostTarget(null)}>
+        <DialogTitle>{t('common.delete')}</DialogTitle>
+        <DialogContent>
+          <Typography>{t('messages.deleteCostConfirm')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteCostTarget(null)}>{t('common.cancel')}</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDeleteCost}>
+            {t('common.delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <ExportDialog
         open={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}

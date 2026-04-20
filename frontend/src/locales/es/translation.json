@@ -156,7 +156,12 @@
     "pleaseEnterValidAmount": "Por favor ingrese una cantidad válida",
     "connectPartnerToAssign": "Conecta una pareja para pagos compartidos y división.",
     "sharedRequiresPartner": "El pago compartido requiere una pareja conectada",
-    "manualSplitRangeError": "La división manual debe estar entre 0-100%"
+    "manualSplitRangeError": "La división manual debe estar entre 0-100%",
+    "invalidCostDate": "Introduzca una fecha válida (año, mes, día).",
+    "costUpdated": "Transacción actualizada correctamente",
+    "costDeleted": "Transacción eliminada correctamente",
+    "deleteCostConfirm": "¿Eliminar esta transacción? No se puede deshacer.",
+    "savingsEditNote": "Se actualizan importe y categoría; se conservan las etiquetas de ahorro."
   },
   "dashboard": {
     "title": "Panel de Control",

@@ -149,6 +149,7 @@ function deserializeCost(cost) {
     paidByUserId: cost.paid_by_userid || cost.userid,
     isShared: !!cost.is_shared,
     sharedWithUserId: cost.shared_with_userid || null,
+    paymentMethod: cost.payment_method || null,
     sharedSplitMode: cost.shared_split_mode || 'half_half',
     sharedSplit: cost.shared_split || { self_percentage: 50, partner_percentage: 50 },
     scheduleOnly: !!cost.schedule_only,
@@ -220,6 +221,38 @@ export async function openCostsDB(getViewFilter) {
       await apiRequest(`/api/costs/schedules/${id}`, { method: 'DELETE' });
     },
 
+    async updateCost(id, fields) {
+      const body = {};
+      if (fields.description !== undefined) body.description = fields.description;
+      if (fields.category !== undefined) {
+        body.category = String(fields.category).trim().toLowerCase();
+      }
+      if (fields.sum !== undefined) {
+        body.sum = typeof fields.sum === 'number' ? fields.sum : parseFloat(String(fields.sum));
+      }
+      if (fields.currency !== undefined) {
+        body.currency = toBackendCurrency(fields.currency);
+      }
+      if (fields.date != null && typeof fields.date === 'object') {
+        body.created_at = new Date(
+          fields.date.year,
+          fields.date.month - 1,
+          fields.date.day
+        ).toISOString();
+      }
+      const raw = await apiRequest(`/api/costs/${encodeURIComponent(String(id))}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      return deserializeCost(raw);
+    },
+
+    async deleteCost(id) {
+      await apiRequest(`/api/costs/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+      });
+    },
+
     async getReport(year, month, currency, options) {
       const opts = typeof options === 'object' && options !== null ? options : {};
       const vsRaw = opts.viewScope != null ? String(opts.viewScope) : viewScopeParam();
@@ -240,13 +273,14 @@ export async function openCostsDB(getViewFilter) {
             if (!Array.isArray(items)) return;
             items.forEach((item) => {
               rows.push({
+                id: item._id != null ? String(item._id) : item.id != null ? String(item.id) : undefined,
                 category,
                 sum: item.sum,
                 description: item.description,
                 day: item.day,
                 type,
                 date: { year, month, day: item.day },
-                currency,
+                currency: item.currency || currency,
                 isShared: !!item.is_shared,
                 ownerUserId: item.owner_userid,
                 sharedWithUserId: item.shared_with_userid,
@@ -285,6 +319,7 @@ export async function openCostsDB(getViewFilter) {
         expenseRows = fromRange
           .filter((item) => (item.type || 'expense') === 'expense')
           .map((item) => ({
+            id: item.id != null ? String(item.id) : undefined,
             category: item.category,
             sum: item.sum,
             description: item.description,
@@ -307,6 +342,7 @@ export async function openCostsDB(getViewFilter) {
         incomeRows = fromRange
           .filter((item) => item.type === 'income')
           .map((item) => ({
+            id: item.id != null ? String(item.id) : undefined,
             category: item.category,
             sum: item.sum,
             description: item.description,
@@ -314,6 +350,10 @@ export async function openCostsDB(getViewFilter) {
             type: 'income',
             date: item.date,
             currency: item.currency || currency,
+            isShared: !!item.isShared,
+            ownerUserId: item.ownerUserId,
+            sharedWithUserId: item.sharedWithUserId,
+            paidByUserId: item.paidByUserId,
           }));
       }
 

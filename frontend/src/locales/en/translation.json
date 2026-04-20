@@ -156,7 +156,12 @@
     "pleaseEnterValidAmount": "Please enter a valid amount",
     "connectPartnerToAssign": "Connect a partner to use shared payments and splits.",
     "sharedRequiresPartner": "Shared payment requires connected partner",
-    "manualSplitRangeError": "Manual split must be within 0-100%"
+    "manualSplitRangeError": "Manual split must be within 0-100%",
+    "invalidCostDate": "Please enter a valid date (year, month, day).",
+    "costUpdated": "Transaction updated successfully",
+    "costDeleted": "Transaction deleted successfully",
+    "deleteCostConfirm": "Delete this transaction? This cannot be undone.",
+    "savingsEditNote": "Amount and category still apply; savings type tags are kept on save."
   },
   "dashboard": {
     "title": "Dashboard",

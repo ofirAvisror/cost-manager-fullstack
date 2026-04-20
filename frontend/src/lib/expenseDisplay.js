@@ -71,6 +71,22 @@ export function getHouseholdExpenseKind(row, myUserId, partnerId) {
   return 'mine';
 }
 
+/**
+ * Whether the signed-in user may edit or delete this cost (matches backend rules).
+ */
+export function canUserMutateCost(cost, myUserId) {
+  if (!cost || cost.scheduleOnly) return false;
+  const me = numUserId(myUserId);
+  if (me == null) return false;
+  const owner = numUserId(cost.ownerUserId ?? cost.owner_userid);
+  if (owner != null && owner === me) return true;
+  const sharedWith = numUserId(cost.sharedWithUserId ?? cost.shared_with_userid);
+  if (cost.isShared ?? cost.is_shared) {
+    if (sharedWith != null && sharedWith === me) return true;
+  }
+  return false;
+}
+
 export function householdExpenseRowSx(kind) {
   if (kind === 'shared') {
     return {

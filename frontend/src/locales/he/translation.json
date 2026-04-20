@@ -156,7 +156,12 @@
     "pleaseEnterValidAmount": "אנא הזן סכום תקין",
     "connectPartnerToAssign": "חבר פרטנר כדי לאפשר תשלום משותף וחלוקה.",
     "sharedRequiresPartner": "תשלום משותף דורש פרטנר מחובר",
-    "manualSplitRangeError": "חלוקה ידנית חייבת להיות בטווח 0-100%"
+    "manualSplitRangeError": "חלוקה ידנית חייבת להיות בטווח 0-100%",
+    "invalidCostDate": "נא להזין תאריך תקין (שנה, חודש, יום).",
+    "costUpdated": "העסקה עודכנה בהצלחה",
+    "costDeleted": "העסקה נמחקה בהצלחה",
+    "deleteCostConfirm": "למחוק את העסקה? לא ניתן לבטל.",
+    "savingsEditNote": "סכום וקטגוריה יעודכנו; סוג החיסכון נשמר."
   },
   "dashboard": {
     "title": "לוח בקרה",

@@ -16,6 +16,16 @@ router.delete('/api/costs/schedules/:id', authenticate, (req, res, next) => {
   next();
 }, costsController.deleteSchedule);
 
+router.put('/api/costs/:id', authenticate, (req, res, next) => {
+  logEndpointAccess(`/api/costs/${req.params.id}`, 'PUT', req.user?.id);
+  next();
+}, costsController.updateCost);
+
+router.delete('/api/costs/:id', authenticate, (req, res, next) => {
+  logEndpointAccess(`/api/costs/${req.params.id}`, 'DELETE', req.user?.id);
+  next();
+}, costsController.deleteCost);
+
 // Get cost by ID
 router.get('/api/costs/:id', optionalAuth, (req, res, next) => {
   logEndpointAccess(`/api/costs/${req.params.id}`, 'GET', req.user?.id);

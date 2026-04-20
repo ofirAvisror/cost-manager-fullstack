@@ -5,7 +5,7 @@ const { logger } = require('../config/logger');
 const { normalizeViewScope, costOwnerMatchForView } = require('../utils/household');
 
 /** Bump when report shape / bucketing logic changes (invalidates Mongo cache). */
-const REPORT_DATA_VERSION = 3;
+const REPORT_DATA_VERSION = 4;
 
 function totalLineItemsInBuckets(buckets) {
   if (!Array.isArray(buckets)) return 0;
@@ -38,9 +38,11 @@ function bucketCostsByCategory(rows) {
     const cat = (t.category && String(t.category).trim()) || 'other';
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push({
+      _id: t._id,
       sum: t.sum,
       description: t.description,
       day: new Date(t.created_at).getDate(),
+      currency: t.currency || 'ILS',
       is_shared: !!t.is_shared,
       owner_userid: t.owner_userid,
       shared_with_userid: t.shared_with_userid,

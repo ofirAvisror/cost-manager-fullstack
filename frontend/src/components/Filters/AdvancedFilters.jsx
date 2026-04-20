@@ -22,7 +22,12 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useHouseholdView } from '../../contexts/HouseholdViewContext';
@@ -32,9 +37,13 @@ import {
   getExpenseLineAmount,
   getHouseholdExpenseKind,
   householdExpenseRowSx,
+  canUserMutateCost,
 } from '../../lib/expenseDisplay';
+import EditCostDialog from '../EditCostDialog';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import toast from 'react-hot-toast';
 
 /**
@@ -71,6 +80,8 @@ export default function AdvancedFilters({ db }) {
   const [filteredCosts, setFilteredCosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingCost, setEditingCost] = useState(null);
+  const [deleteCostTarget, setDeleteCostTarget] = useState(null);
 
   useEffect(function() {
     if (db) {
@@ -91,11 +102,13 @@ export default function AdvancedFilters({ db }) {
     }
   };
 
-  const handleApplyFilters = async function() {
+  const handleApplyFilters = async function(opts) {
     if (!db) {
       toast.error(t('messages.databaseNotInitialized'));
       return;
     }
+
+    const silent = opts && opts.silent === true;
 
     setLoading(true);
     try {
@@ -127,11 +140,27 @@ export default function AdvancedFilters({ db }) {
       filtered = filtered.filter(c => c.currency === currency);
       
       setFilteredCosts(filtered);
-      toast.success(t('messages.foundResults', { count: filtered.length }));
+      if (!silent) {
+        toast.success(t('messages.foundResults', { count: filtered.length }));
+      }
     } catch (error) {
       toast.error(t('messages.failedToApply'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteCost = async function() {
+    if (!db || !deleteCostTarget || !deleteCostTarget.id) return;
+    try {
+      await db.deleteCost(deleteCostTarget.id);
+      toast.success(t('messages.costDeleted'));
+      setDeleteCostTarget(null);
+      setEditingCost(null);
+      await handleApplyFilters({ silent: true });
+    } catch (error) {
+      const extra = error instanceof Error ? error.message : '';
+      toast.error(t('messages.failedToDelete') + (extra ? ': ' + extra : ''));
     }
   };
 
@@ -144,6 +173,8 @@ export default function AdvancedFilters({ db }) {
     setMaxAmount('');
     setCurrency('ILS');
     setFilteredCosts([]);
+    setEditingCost(null);
+    setDeleteCostTarget(null);
   };
 
   const totalAmount = filteredCosts.reduce(
@@ -369,6 +400,7 @@ export default function AdvancedFilters({ db }) {
                     <TableCell>{t('common.description')}</TableCell>
                     <TableCell align="right">{t('common.amount')}</TableCell>
                     <TableCell>{t('common.currency')}</TableCell>
+                    <TableCell align="right" sx={{ width: 108 }} />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -394,6 +426,27 @@ export default function AdvancedFilters({ db }) {
                         <TableCell>{cost.description}</TableCell>
                         <TableCell align="right">{lineAmt.toFixed(2)}</TableCell>
                         <TableCell>{cost.currency}</TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                          {cost.id && canUserMutateCost(cost, myUserId) ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.25 }}>
+                              <IconButton
+                                size="small"
+                                aria-label={t('common.edit')}
+                                onClick={() => setEditingCost(cost)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                aria-label={t('common.delete')}
+                                onClick={() => setDeleteCostTarget(cost)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ) : null}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -403,6 +456,27 @@ export default function AdvancedFilters({ db }) {
           </CardContent>
         </Card>
       )}
+
+      <EditCostDialog
+        open={Boolean(editingCost)}
+        cost={editingCost}
+        db={db}
+        onClose={() => setEditingCost(null)}
+        onSaved={() => handleApplyFilters({ silent: true })}
+      />
+
+      <Dialog open={Boolean(deleteCostTarget)} onClose={() => setDeleteCostTarget(null)}>
+        <DialogTitle>{t('common.delete')}</DialogTitle>
+        <DialogContent>
+          <Typography>{t('messages.deleteCostConfirm')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteCostTarget(null)}>{t('common.cancel')}</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDeleteCost}>
+            {t('common.delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
