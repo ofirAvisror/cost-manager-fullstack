@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
   Typography,
 } from '@mui/material';
@@ -67,6 +71,14 @@ export default function PartnerManager({ db }) {
       setLoading(false);
     }
   };
+
+  const monthNames = useMemo(function() {
+    return [
+      t('months.january'), t('months.february'), t('months.march'), t('months.april'),
+      t('months.may'), t('months.june'), t('months.july'), t('months.august'),
+      t('months.september'), t('months.october'), t('months.november'), t('months.december'),
+    ];
+  }, [t]);
 
   const loadSettlement = async function() {
     try {
@@ -166,14 +178,21 @@ export default function PartnerManager({ db }) {
               />
             </Grid>
             <Grid item xs={12} md={4}>
-              <TextField
-                label={t('common.month')}
-                type="number"
-                value={month}
-                onChange={(e) => setMonth(parseInt(e.target.value, 10) || 1)}
-                inputProps={{ min: 1, max: 12 }}
-                fullWidth
-              />
+              <FormControl fullWidth>
+                <InputLabel id="partner-month-label">{t('common.month')}</InputLabel>
+                <Select
+                  labelId="partner-month-label"
+                  value={month}
+                  label={t('common.month')}
+                  onChange={(e) => setMonth(e.target.value)}
+                >
+                  {monthNames.map((name, index) => (
+                    <MenuItem key={index + 1} value={index + 1}>
+                      {name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={4}>
               <Button
