@@ -315,6 +315,22 @@ async function updateCost(req, res) {
     if (body.tags !== undefined) {
       updates.tags = body.tags;
     }
+    if (body.paid_by_userid !== undefined) {
+      const paidBy = parseInt(body.paid_by_userid, 10);
+      if (!Number.isFinite(paidBy)) {
+        return res.status(400).json({
+          id: 'VALIDATION_ERROR',
+          message: 'paid_by_userid must be a valid user id',
+        });
+      }
+      updates.paid_by_userid = paidBy;
+    }
+    if (body.shared_split_mode !== undefined) {
+      updates.shared_split_mode = body.shared_split_mode;
+    }
+    if (body.shared_split !== undefined) {
+      updates.shared_split = body.shared_split;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({

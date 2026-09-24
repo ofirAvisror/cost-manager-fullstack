@@ -1,5 +1,5 @@
 /**
- * EditCostDialog — edit amount, category, description, date, and currency for an existing cost.
+ * EditCostDialog — edit amount, category, description, date, currency, and shared-expense payer/split.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,6 +16,7 @@ import {
   InputLabel,
   Box,
   Typography,
+  Alert,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -30,6 +31,20 @@ export default function EditCostDialog({ open, cost, db, onClose, onSaved }) {
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [categories, setCategories] = useState([]);
+  const [partnerStatus, setPartnerStatus] = useState(null);
+  const [paidByTarget, setPaidByTarget] = useState('self');
+  const [splitMode, setSplitMode] = useState('half_half');
+  const [selfPercentage, setSelfPercentage] = useState(50);
+
+  const hasConnectedPartner = partnerStatus?.status === 'connected' && partnerStatus?.partner;
+  const myUserId = partnerStatus?.user_id ?? null;
+  const partnerUserId = partnerStatus?.partner?.id ?? null;
+  const partnerDisplayName = hasConnectedPartner
+    ? `${partnerStatus.partner.first_name || ''} ${partnerStatus.partner.last_name || ''}`.trim() ||
+      partnerStatus.partner.email ||
+      t('forms.partnerOption')
+    : t('forms.partnerOption');
+  const isSharedCost = !!cost?.isShared;
 
   useEffect(
     function syncFieldsFromCost() {
@@ -42,8 +57,33 @@ export default function EditCostDialog({ open, cost, db, onClose, onSaved }) {
       setYear(String(d.year ?? ''));
       setMonth(String(d.month ?? ''));
       setDay(String(d.day ?? ''));
+      setSplitMode(cost.sharedSplitMode || 'half_half');
+      const split = cost.sharedSplit || { self_percentage: 50, partner_percentage: 50 };
+      setSelfPercentage(Number(split.self_percentage) || 50);
+      const paidBy = cost.paidByUserId != null ? Number(cost.paidByUserId) : null;
+      const partnerIdNum =
+        partnerUserId != null ? Number(partnerUserId) : null;
+      if (paidBy != null && partnerIdNum != null && paidBy === partnerIdNum) {
+        setPaidByTarget('partner');
+      } else {
+        setPaidByTarget('self');
+      }
     },
-    [open, cost]
+    [open, cost, partnerUserId]
+  );
+
+  useEffect(
+    function loadPartnerStatus() {
+      if (!open || !db || typeof db.getPartnerStatus !== 'function') return;
+      (async function () {
+        try {
+          setPartnerStatus(await db.getPartnerStatus());
+        } catch (error) {
+          setPartnerStatus(null);
+        }
+      })();
+    },
+    [open, db]
   );
 
   useEffect(
@@ -100,14 +140,39 @@ export default function EditCostDialog({ open, cost, db, onClose, onSaved }) {
       return;
     }
 
+    if (isSharedCost && splitMode === 'manual') {
+      const partnerPct = 100 - selfPercentage;
+      if (selfPercentage < 0 || selfPercentage > 100 || partnerPct < 0 || partnerPct > 100) {
+        toast.error(t('messages.manualSplitRangeError'));
+        return;
+      }
+    }
+
+    const updatePayload = {
+      description: description.trim(),
+      category: category.trim(),
+      sum: s,
+      currency,
+      date: { year: y, month: m, day: dd },
+    };
+
+    if (isSharedCost) {
+      const finalPaidByUserId =
+        paidByTarget === 'partner' && partnerUserId ? partnerUserId : myUserId;
+      if (!finalPaidByUserId) {
+        toast.error(t('messages.connectPartnerToAssign'));
+        return;
+      }
+      updatePayload.paidByUserId = finalPaidByUserId;
+      updatePayload.sharedSplitMode = splitMode;
+      updatePayload.sharedSplit =
+        splitMode === 'manual'
+          ? { self_percentage: selfPercentage, partner_percentage: 100 - selfPercentage }
+          : { self_percentage: 50, partner_percentage: 50 };
+    }
+
     try {
-      await db.updateCost(cost.id, {
-        description: description.trim(),
-        category: category.trim(),
-        sum: s,
-        currency,
-        date: { year: y, month: m, day: dd },
-      });
+      await db.updateCost(cost.id, updatePayload);
       toast.success(t('messages.costUpdated'));
       if (typeof onSaved === 'function') onSaved();
       onClose();
@@ -128,6 +193,51 @@ export default function EditCostDialog({ open, cost, db, onClose, onSaved }) {
             <Typography variant="body2" color="text.secondary">
               {t('messages.savingsEditNote')}
             </Typography>
+          )}
+          {isSharedCost && (
+            <>
+              <Alert severity="info">{t('forms.sharedPayment')}</Alert>
+              {!hasConnectedPartner && (
+                <Typography variant="body2" color="text.secondary">
+                  {t('messages.connectPartnerToAssign')}
+                </Typography>
+              )}
+              <FormControl fullWidth disabled={!hasConnectedPartner}>
+                <InputLabel>{t('forms.paidBy')}</InputLabel>
+                <Select
+                  value={paidByTarget}
+                  label={t('forms.paidBy')}
+                  onChange={(e) => setPaidByTarget(e.target.value)}
+                >
+                  <MenuItem value="self">{t('forms.meOption')}</MenuItem>
+                  <MenuItem value="partner">{partnerDisplayName}</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>{t('forms.splitMode')}</InputLabel>
+                <Select
+                  value={splitMode}
+                  label={t('forms.splitMode')}
+                  onChange={(e) => setSplitMode(e.target.value)}
+                >
+                  <MenuItem value="half_half">{t('forms.splitHalfHalf')}</MenuItem>
+                  <MenuItem value="manual">{t('forms.splitManual')}</MenuItem>
+                </Select>
+              </FormControl>
+              {splitMode === 'manual' && (
+                <TextField
+                  label={t('forms.mySharePercent')}
+                  type="number"
+                  value={selfPercentage}
+                  onChange={(e) =>
+                    setSelfPercentage(Math.min(100, Math.max(0, Number(e.target.value))))
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, max: 100, step: 1 }}
+                  helperText={t('forms.partnerSharePercent', { percent: 100 - selfPercentage })}
+                />
+              )}
+            </>
           )}
           <TextField
             label={t('common.description')}

@@ -429,6 +429,64 @@ async function updateCost(id, updates, actorUserId) {
       .map((tag) => tag.trim());
   }
 
+  const needsSharedMutation =
+    updates.paid_by_userid !== undefined ||
+    updates.shared_split_mode !== undefined ||
+    updates.shared_split !== undefined;
+
+  if (needsSharedMutation) {
+    if (!cost.is_shared) {
+      throw new Error('Shared expense fields can only be updated on shared costs');
+    }
+    const actor = await User.findOne({ id: parseInt(actorUserId, 10) });
+    if (!actor) throw new Error('User not found');
+
+    if (updates.paid_by_userid !== undefined) {
+      const paidByUserId = parseInt(updates.paid_by_userid, 10);
+      const payer = await User.findOne({ id: paidByUserId });
+      if (!payer) throw new Error('User not found');
+      const canUsePayer =
+        payer.id === actor.id ||
+        (actor.partner_status === 'connected' && actor.partner_id === payer.id);
+      if (!canUsePayer) {
+        throw new Error('paid_by_userid must be self or connected partner');
+      }
+      cost.paid_by_userid = paidByUserId;
+    }
+
+    let splitMode =
+      updates.shared_split_mode !== undefined
+        ? updates.shared_split_mode
+        : cost.shared_split_mode || 'half_half';
+    if (!['half_half', 'manual'].includes(splitMode)) {
+      throw new Error('shared_split_mode must be "half_half" or "manual"');
+    }
+    if (updates.shared_split_mode !== undefined || updates.shared_split !== undefined) {
+      let splitData = { self_percentage: 50, partner_percentage: 50 };
+      if (splitMode === 'manual') {
+        const splitSource =
+          updates.shared_split !== undefined ? updates.shared_split : cost.shared_split;
+        const selfPercentage = Number(splitSource?.self_percentage);
+        const partnerPercentage = Number(splitSource?.partner_percentage);
+        if (
+          Number.isNaN(selfPercentage) ||
+          Number.isNaN(partnerPercentage) ||
+          selfPercentage < 0 ||
+          partnerPercentage < 0 ||
+          Math.round((selfPercentage + partnerPercentage) * 100) !== 10000
+        ) {
+          throw new Error('Manual split must have self_percentage + partner_percentage = 100');
+        }
+        splitData = {
+          self_percentage: selfPercentage,
+          partner_percentage: partnerPercentage,
+        };
+      }
+      cost.shared_split_mode = splitMode;
+      cost.shared_split = splitData;
+    }
+  }
+
   await cost.save();
   logger.info(`Cost updated: ${id} by user ${actorUserId}`);
 

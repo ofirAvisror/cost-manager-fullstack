@@ -240,6 +240,15 @@ export async function openCostsDB(getViewFilter) {
           fields.date.day
         ).toISOString();
       }
+      if (fields.paidByUserId !== undefined) {
+        body.paid_by_userid = fields.paidByUserId;
+      }
+      if (fields.sharedSplitMode !== undefined) {
+        body.shared_split_mode = fields.sharedSplitMode;
+      }
+      if (fields.sharedSplit !== undefined) {
+        body.shared_split = fields.sharedSplit;
+      }
       const raw = await apiRequest(`/api/costs/${encodeURIComponent(String(id))}`, {
         method: 'PUT',
         body: JSON.stringify(body),
