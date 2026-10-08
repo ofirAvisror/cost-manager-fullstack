@@ -11,7 +11,7 @@ jobs:
         run: |
           HOUR=$(TZ=Asia/Jerusalem date +%H)
           if [ "$HOUR" -ge 11 ] && [ "$HOUR" -lt 22 ]; then
-            curl -fsS --max-time 60 https://cost-manager-restful-web-services-u68h.onrender.com/
+            curl -fsS --max-time 60 https://cost-manager-fullstack.onrender.com/
           else
             echo "Outside Israel daytime window (11:00-22:00); skip"
           fi
