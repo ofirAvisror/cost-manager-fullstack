@@ -1,0 +1,17 @@
+name: Keep Render awake (Israel daytime)
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend if 11:00-22:00 Asia/Jerusalem
+        run: |
+          HOUR=$(TZ=Asia/Jerusalem date +%H)
+          if [ "$HOUR" -ge 11 ] && [ "$HOUR" -lt 22 ]; then
+            curl -fsS --max-time 60 https://cost-manager-restful-web-services-u68h.onrender.com/
+          else
+            echo "Outside Israel daytime window (11:00-22:00); skip"
+          fi
